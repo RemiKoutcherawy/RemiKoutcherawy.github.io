@@ -9,20 +9,13 @@
     .height100 { position:relative; width:100%; height:100%;}
     #canvas3d { position:absolute; width:100%; height:100%; left:0; top:0; border:1px solid darkblue; z-index:0;}
     #canvas3dtext { position:absolute; width:100%; height:100%; left:0; top:0; z-index:10; }
-    #menu {position:fixed; top:15px; right:15px; background-color:#FFF; z-index:20}
-    .menu {position:fixed; top:15px; right:15px; background-color:#ABD1FF; opacity:1; z-index:20}
-    .item {display:none;}
   </style>
 </head>
 <body>
   <div class="height100">
     <canvas id="canvas3d"></canvas>
     <canvas id="canvas3dtext"></canvas>
-    <div class="menu">Menu
-      <div class="item">cocotte.txt</div>
-    </div>
   </div>
-
 
   <!-- Inlined models -->
   <script id="cocotte.txt" type="not-javascript">
@@ -62,10 +55,15 @@
   t 500 r 16 -90 10 8 20 17 16 14 3 19 r 40 -90 0)
   t 500 r 16 -80 10 8 20 17 16 14 3 19 a 0)
   // Ajuste à peu près
+  o 0
   r 24 10 4 r 37 -10 8
   r 29 -5 5 8 r 23 -5 7 4
+  r 15 10 21  r 15 -10 10
   // Montre
-  iao t 1000 zf) t 1000 tz -45) t 1000 zf)
+  iao
+  t 1000 zf)
+  t 1000 tz -45)
+  t 1000 zf)
   iso t 4000 ty 360)
   </script>
 
@@ -1484,12 +1482,12 @@
       return obj;
     },
     // Fit the model to -200 +200
-    zoomFit:function () {
+    zoomFit:function() {
       var b     = this.get3DBounds();
       var w     = 400;
-      var scale = w / Math.max(b[2] - b[0], b[3] - b[1]);
-      var cx    = -(b[0] + b[2]) / 2;
-      var cy    = -(b[1] + b[3]) / 2;
+      var scale = w / Math.max(b.xmax - b.xmin, b.ymax - b.ymin);
+      var cx    = -(b.xmin + b.xmax) / 2;
+      var cy    = -(b.ymin + b.ymax) / 2;
       this.move(cx, cy, 0, null);
       this.scaleModel(scale);
     },
@@ -2811,16 +2809,15 @@
       // Bind all in OriSim3d
       new Orisim3d(model, view2d, view3d);
 
-      var first = true;
+      // Read tag and launch
+      var tag = document.getElementById("cocotte.txt");
+      orisim3d.command.command(tag.textContent);
+
+      // Launch animation
+      requestAnimationFrame(loop);
 
       // Animation loop
       function loop() {
-        if (first) {
-          // Read Cocotte Script
-           command.command("read script cocotte.txt"); // For model buddled in html
-          // command.command("read models/cocotte.txt"); // For xhr
-          first = false;
-        }
         if (model.change) {
           if (view2d !== null) {
             view2d.draw();
@@ -2832,60 +2829,16 @@
         }
         // Always redraw view3d ?
         view3d.draw();
+
+        // loop on next frame
         requestAnimationFrame(loop);
       }
-
-      requestAnimationFrame(loop);
     }
   }
 
   // Just for Node.js
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = Orisim3d;
-  }
-</script>
-<script id="Menu.js" type="application/javascript">
-  // File: js/Menu.js
-  // Menu Constructor
-  function Menu() {
-    // Static values initialized in constructor
-    Menu.menuElement = window.document.getElementsByClassName('menu')[0];
-    Menu.menuElement.addEventListener('click', this.click);
-    Menu.hidden = true;
-  }
-  // Class methods
-  Menu.prototype = {
-    constructor:Menu,
-    click:function (ev) {
-      var items = window.document.getElementsByClassName('item');
-      // Menu open
-      if (Menu.hidden){
-        for(var i = 0; i < items.length; i++) {
-          items[i].style.display = "block";
-        }
-        Menu.hidden = false;
-      }
-      // Menu Close if click on top
-      else if (ev.target === Menu.menuElement) {
-        for(var j = 0; j < items.length; j++) {
-          items[j].style.display = "none";
-        }
-        Menu.hidden = true;
-      }
-      // In all cases look for a <script id="modele" type="not-javascript"/> named after item
-      var modele = ev.target.innerText;
-      var script = window.document.getElementById(modele);
-      if (script){
-        // Global variable
-        orisim3d.command.command("read script "+modele);
-      }
-    }
-  };
-  // New Menu on load
-  if (typeof window !== 'undefined') {
-    window.addEventListener("load", function () {
-      new Menu();
-    })
   }
 </script>
 
