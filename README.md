@@ -11,3 +11,9 @@ Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://j
 [cocotte.hmtl](https://remikoutcherawy.github.io/cocotte.html) 
 
 [vue3dLocal.hmtl](https://remikoutcherawy.github.io/vue3dLocal.html) 
+
+Old code non minified
+
+[cocotteDebug.hmtl](https://remikoutcherawy.github.io/cocotteDebug.html)
+
+[test.hmtl](https://remikoutcherawy.github.io/test/test.html) 
