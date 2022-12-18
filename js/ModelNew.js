@@ -555,16 +555,24 @@ class Segment {
         return pq.length();
     }
 
-        // Closest points between line [A,B] and line [C, D] return {p, q}
+    // Closest points between line [A,B] and line [C, D] return {p, q}
     static closestSegment(A, B, C, D) {
-        // On AB segment we have : P(t1)=A+t1*(B-C)
-        // On CD segment we have : Q(t2)=C.p1+t2*(D-C)
-        // Vector PQ perpendicular to both lines : PQ(t1,t2).AB=0  PQ(t1,t2).CD=0
+
+        // Clamp n to lie within the range [min, max]
+        function clamp(n, min,  max) {
+            if (n < min) return min;
+            if (n > max) return max;
+            return n;
+        }
+
+        // On AB segment we have : P(s)=A+s*(B-C)
+        // On CD segment we have : Q(t)=C.p1+t*(D-C)
+        // Vector PQ perpendicular to both lines : PQ(s,t).AB=0  PQ(s,t).CD=0
         // Cramer system :
-        // (AB.AB)*t1 - (AB.CD)*t2 = -AB.r <=> a*t1 -b*t2 = -c
-        // (AB.CD)*t1 - (CD.CD)*t2 = -CD.r <=> b*t1 -e*t2 = -f
-        // Solved to t1=(bf-ce)/(ae-bb) t2=(af-bc)/(ae-bb)
-        let t1, t2, closest;
+        // (AB.AB)*s - (AB.CD)*t = -AB.r <=> a*s -b*t = -c
+        // (AB.CD)*s - (CD.CD)*t = -CD.r <=> b*s -e*t = -f
+        // Solved to s=(bf-ce)/(ae-bb) t=(af-bc)/(ae-bb)
+        let s, t, closest, EPSILON = 1e-6;
         const AB = new Vector3(B.x - A.x, B.y - A.y, B.z - A.z);
         const CD = new Vector3(D.x - C.x, D.y - C.y, D.z - C.z);
         const CA = new Vector3(A.x - C.x, A.y - C.y, A.z - C.z); // C to A
@@ -572,48 +580,56 @@ class Segment {
         const e = CD.dot(CD); // squared length of CD
         const f = CD.dot(CA);
         // Check degeneration of segments into points
-        if (a < 1 && e < 1) {
+        if (a < EPSILON && e < EPSILON) {
             // Both degenerate into points
-            t1 = t2 = 0.0;
+            s = t = 0.0;
             closest = {p: A, q: C};
         } else {
-            if (a < 1) {
+            if (a < EPSILON) {
                 // AB segment degenerate into point
-                t1 = 0.0;
-                t2 = f / e; // t1=0 => t2=(b*t1+f)/e = f/e // f = 0 ??
+                s = 0.0;
+                // t = f / e; // s=0 => t=(b*s+f)/e = f/e
+                // t = t < 0 ? 0 : t > 1 ? 1 : t;
+                t = clamp(f / e, 0.0, 1.0);
             } else {
                 const c = AB.dot(CA);
-                if (e < 1) {
+                if (e < EPSILON) {
                     // CD segment degenerate into point
-                    t2 = 0.0;
-                    t1 = -c / a; // t2=0 => t1=(b*t2-c)/a = -c/a
+                    t = 0.0;
+                    // s = -c / a; // t=0 => s=(b*t-c)/a = -c/a
+                    // s = s < 0 ? 0 : s > 1 ? 1 : s;
+                    s = clamp(-c / a, 0.0, 1.0);
                 } else {
                     // General case
                     const b = AB.dot(CD); // Delayed computation of b
                     const denominator = a * e - b * b; // Denominator of cramer system
                     // Segments not parallel, compute closest
                     if (denominator !== 0.0) {
-                        t1 = (b * f - c * e) / denominator;
+                        // s = (b * f - c * e) / denominator
+                        // s = s < 0 ? 0 : s > 1 ? 1 : s;
+                        s = clamp((b * f - c * e) / denominator, 0.0, 1.0);
                     } else {
                         // Arbitrary point, here 0 => p1
-                        t1 = 0;
+                        s = 0;
                     }
-                    // Compute the closest on CD using t1
-                    t2 = (b * t1 + f) / e;
-                    // if t2 in [0,1] done, else clamp t2 and recompute t1
-                    if (t2 < 0.0) {
-                        t2 = 0;
-                        t1 = -c / a;
-                        t1 = t1 < 0 ? 0 : t1 > 1 ? 1 : t1;
-                    } else if (t2 > 1.0) {
-                        t2 = 1.0;
-                        t1 = (b - c) / a;
-                        t1 = t1 < 0 ? 0 : t1 > 1 ? 1 : t1;
+                    // Compute the closest on CD using s
+                    t = (b * s + f) / e;
+                    // if t in [0,1] done, else clamp t and recompute s
+                    if (t < 0.0) {
+                        t = 0;
+                        // s = -c / a;
+                        // s = s < 0 ? 0 : s > 1 ? 1 : s;
+                        s = clamp(-c / a, 0.0, 1.0);
+                    } else if (t > 1.0) {
+                        t = 1.0;
+                        // s = (b - c) / a;
+                        // s = s < 0 ? 0 : s > 1 ? 1 : s;
+                        s = clamp((b - c) / a, 0.0, 1.0);
                     }
                 }
             }
-            const P = new Vector3(A.x, A.y, A.z).add(AB.scale(t1)); // P = a+t1*(b-a)
-            const Q = new Vector3(C.x, C.y, C.z).add(CD.scale(t2)); // Q = c+t2*(d-c)
+            const P = new Vector3(A.x, A.y, A.z).add(AB.scale(s)); // P = a+s*(b-a)
+            const Q = new Vector3(C.x, C.y, C.z).add(CD.scale(t)); // Q = c+t*(d-c)
             closest = {p: P, q: Q};
         }
         return closest;

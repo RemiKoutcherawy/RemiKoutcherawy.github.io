@@ -267,8 +267,8 @@ QUnit.module('Segment closestSegment', hooks => {
         c = new Vector3(0, 0, 0);	// 45° from 0,0 to 200,200
         d = new Vector3(200, 200, 0);
         s = Segment.closestSegment(a, b, c, d);
-        assert.deepEqual(s.p, new Vector3(100, 100, 0));
-        assert.deepEqual(s.q, new Vector3(100, 100, 0));
+        assert.deepEqual(s.p, new Vector3(100, 100, 0), "Intersecting segments");
+        assert.deepEqual(s.q, new Vector3(100, 100, 0), "Intersecting segments");
 
         // First and second are non-intersecting segments
         a = new Vector3(100, 0, 0); // vertical x=100 y[0,100]
@@ -276,8 +276,8 @@ QUnit.module('Segment closestSegment', hooks => {
         c = new Vector3(0, 200, 0); // horizontal y=200 x[0,200]
         d = new Vector3(200, 200, 0);
         s = Segment.closestSegment(a, b, c, d);
-        assert.deepEqual(s.p, new Vector3(100, 200, 0));
-        assert.deepEqual(s.q, new Vector3(100, 100, 0));
+        assert.deepEqual(s.p, new Vector3(100, 100, 0), "Non intersecting segments on same plane");
+        assert.deepEqual(s.q, new Vector3(100, 200, 0), "Non intersecting segments on same plane");
 
         // First and second are non-intersecting lines in 3D
         a = new Vector3(0, 0, 100); // diagonal on back side of cube
@@ -285,8 +285,8 @@ QUnit.module('Segment closestSegment', hooks => {
         c = new Vector3(0, 100, 0); // diagonal on front side of cube
         d = new Vector3(100, 0, 0);
         s = Segment.closestSegment(a, b, c, d); // line between middle of front face to middle of back face
-        assert.deepEqual(s.p, new Vector3(50, 50, 100));
-        assert.deepEqual(s.q, new Vector3(50, 50, 0));
+        assert.deepEqual(s.p, new Vector3(50, 50, 100), "Non intersecting segments in 3D");
+        assert.deepEqual(s.q, new Vector3(50, 50, 0), "Non intersecting segments in 3D");
     });
 });
 
@@ -340,7 +340,7 @@ QUnit.module('Segment distanceToSegment', hooks => {
         c = new Vector3(0, 200, 0); // horizontal y=200 x[0,200]
         d = new Vector3(200, 200, 0);
         e = Segment.distanceToSegment(a, b, c, d);
-        assert.deepEqual(e, 100, "Non intersecting segments");
+        assert.deepEqual(e, 100, "Non intersecting segments on same plane");
 
         // First and second are non-intersecting lines in 3D
         a = new Vector3(0, 0, 100); // diagonal on back side of cube
@@ -348,7 +348,7 @@ QUnit.module('Segment distanceToSegment', hooks => {
         c = new Vector3(0, 100, 0); // diagonal on front side of cube
         d = new Vector3(100, 0, 0);
         e = Segment.distanceToSegment(a, b, c, d); // line between middle of front face to middle of back face
-        assert.deepEqual(e, 100, "Non intersecting segments");
+        assert.deepEqual(e, 100, "Non intersecting segments in 3D");
     });
 });
 
