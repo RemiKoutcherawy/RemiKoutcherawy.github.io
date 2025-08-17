@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Cocotte Three.js</title>
+</head>
+<body>
+
+<!-- Utilisation de three et OrbitControls via CDN -->
+<script type="module">
+    import * as three from 'https://unpkg.com/three@0.159.0/build/three.module.js?module';
+    import { OrbitControls } from 'https://unpkg.com/three@0.159.0/examples/jsm/controls/OrbitControls.js?module';
+    import { Model } from './jsm/Model.js';
+    import { Command } from './jsm/Command.js';
+
+    // Scène
+    const scene = new three.Scene();
+    scene.background = new three.Color(0xCCE4FF);
+
+    // Caméra
+    const camera = new three.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+    camera.position.set(0, 0, 400);
+    camera.lookAt(0, 0, 0);
+
+    // Rendu
+    const renderer = new three.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    document.body.appendChild(renderer.domElement);
+
+    // Lumières
+    const ambient = new three.AmbientLight(0xffffff, 1);
+    scene.add(ambient);
+    // Lumière directionnelle principale venant de face
+    const dir = new three.DirectionalLight(0xffffff, 2);
+    dir.position.set(0, 0, 1);
+    scene.add(dir);
+
+    // Textures
+    const frontTexture = new three.TextureLoader().load('textures/front.jpg');
+    frontTexture.colorSpace = three.SRGBColorSpace;
+    const backTexture = new three.TextureLoader().load('textures/back.jpg');
+    backTexture.colorSpace = three.SRGBColorSpace;
+    const TEX_W = 400, TEX_H = 400;
+
+    // Origami
+    const model = new Model().init();
+    const command = new Command(model);
+
+    function createGeometry(model) {
+        const geometry = new three.BufferGeometry();
+
+        // Faces
+        const vtx = []; // vertex
+        const ftx = []; // front texture coords
+        const fnr = []; // front normals coords
+        const fin = []; // front indices
+        let index = 0;
+
+        for (let iFace = 0; iFace < model.faces.length; iFace++) {
+            const f = model.faces[iFace];
+            const pts = f.points;
+            // Normal needed for Offset and used for lightning
+            f.normal = faceNormal(pts);
+            const n = f.normal;
+            // Triangle FAN can be used only because of convex CCW face
+            const c = pts[0]; // center
+            let p = pts[1]; // previous
+            let s; // current point
+            for (let i = 2; i < pts.length; i++) {
+                s = pts[i];
+                vtx.push(c.x + f.offset * n[0]);
+                vtx.push(c.y + f.offset * n[1]);
+                vtx.push(c.z + f.offset * n[2]);
+                fnr.push(n[0], n[1], n[2]);
+                // textures
+                ftx.push((200 + c.xf) / TEX_W);
+                ftx.push((200 + c.yf) / TEX_H);
+                // index
+                fin.push(index++);
+
+                vtx.push(p.x + f.offset * n[0]);
+                vtx.push(p.y + f.offset * n[1]);
+                vtx.push(p.z + f.offset * n[2]);
+                fnr.push(n[0], n[1], n[2]);
+                // textures
+                ftx.push((200 + p.xf) / TEX_W);
+                ftx.push((200 + p.yf) / TEX_H);
+                // index
+                fin.push(index++);
+
+                vtx.push(s.x + f.offset * n[0]);
+                vtx.push(s.y + f.offset * n[1]);
+                vtx.push(s.z + f.offset * n[2]);
+                fnr.push(n[0], n[1], n[2]);
+                // textures
+                ftx.push((200 + s.xf) / TEX_W);
+                ftx.push((200 + s.yf) / TEX_H);
+                // index
+                fin.push(index++);
+                // next triangle
+                p = s;
+            }
+
+            function faceNormal(pts) {
+                const n = [3];
+                for (let i = 0; i < pts.length - 2; i++) {
+                    // Take triangles until p2p1 x p1p3 > 0.1
+                    const p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2];
+                    const u = [p2.x - p1.x, p2.y - p1.y, p2.z - p1.z];
+                    const v = [p3.x - p1.x, p3.y - p1.y, p3.z - p1.z];
+                    n[0] = u[1] * v[2] - u[2] * v[1];
+                    n[1] = u[2] * v[0] - u[0] * v[2];
+                    n[2] = u[0] * v[1] - u[1] * v[0];
+                    if (Math.abs(n[0]) + Math.abs(n[1]) + Math.abs(n[2]) > 0.1) {
+                        break;
+                    }
+                }
+                return n;
+            }
+        }
+
+        // Attributes
+        geometry.setAttribute('position', new three.BufferAttribute(new Float32Array(vtx), 3));
+        geometry.setAttribute('normal', new three.BufferAttribute(new Float32Array(fnr), 3));
+        geometry.setAttribute('uv', new three.BufferAttribute(new Float32Array(ftx), 2));
+        geometry.setIndex(fin);
+        return geometry;
+    }
+
+    let geometry = createGeometry(model);
+
+    const frontMat = new three.MeshPhongMaterial({
+        color: 0xFFFFFF,
+        side: three.FrontSide,
+        map: frontTexture,
+        specular: 0x444444,
+        shininess: 100,
+    });
+    const backMat = new three.MeshPhongMaterial({
+        color: 0xFFFFFF,
+        side: three.BackSide,
+        map: backTexture,
+        specular: 0x444444,
+        shininess: 100,
+    });
+    const front = new three.Mesh(geometry, frontMat);
+    const back = new three.Mesh(geometry, backMat);
+    scene.add(front);
+    scene.add(back);
+
+    // Wireframe
+    const wireMaterial = new three.MeshLambertMaterial({ color: 0x000000, wireframe: true });
+    const wireMesh = new three.Mesh(geometry, wireMaterial);
+    scene.add(wireMesh);
+
+    // Controls
+    const orbit = new OrbitControls(camera, renderer.domElement);
+    orbit.update();
+    orbit.saveState();
+    orbit.addEventListener('change', animate);
+    window.addEventListener('dblclick', () => { orbit.reset(); });
+
+    // Update geometry when the model changed
+    function updateGeometry() {
+        const oldGeometry = geometry;
+        geometry = createGeometry(model);
+        front.geometry = geometry;
+        back.geometry = geometry;
+        wireMesh.geometry = geometry;
+        geometry.computeBoundingSphere();
+        geometry.computeBoundingBox();
+        if (oldGeometry && oldGeometry !== geometry) oldGeometry.dispose();
+    }
+
+    // Boucle de rendu
+    function animate() {
+        requestAnimationFrame(animate);
+        const changed = command.anim();
+        if (changed) {
+            updateGeometry();
+        }
+        renderer.render(scene, camera);
+    }
+
+    animate();
+
+    // Ajuster au redimensionnement
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Origami script injection
+    const script = document.getElementById('cocotte.txt');
+    command.command(script.textContent);
+</script>
+
+<!-- Cocotte script -->
+<div id="cocotte.txt" hidden="hidden">define 200 200
+    // Define crease pattern
+    c3d 0 1 c3d 0 3 c3d 0 2 c3d 1 3 c3d 0 8 c3d 8 3
+    c3d 0 4 c3d 4 1 c3d 6 0 c3d 6 1 c3d 6 2 c3d 6 3
+
+    // Movements with Accelerate Decelerate Interpolator (iad)
+    iad
+    t 100 ty 180;
+
+    // Fold one corner
+    offset 1 13 14 30 31
+    t 100 r 54 -180 3 17 19;
+    t 100 ty 180;
+
+    // Fold from top
+    t 100 rotate 27 165 5 22 2
+
+    // Lift up top right corner
+    t 100 r 53 -90 22 a 2 18
+    // Fold from right
+    t 100 r 45 165 7 12 1 a 2 18
+    // Flatten leg
+    t 100 r 53 60 22 a 2 18
+    // Lay leg flat
+    t 100 r 53 30 22 2 18
+
+    // Lift up bottom right corner
+    t 100 r 50 -90 12 a 1 24
+    // Fold from bottom
+    t 100 r 23 165 0 21 4 a 1 24
+    // Flatten leg
+    t 100 r 51 -60 12 a 1 24
+    // Lay leg flat
+    t 100 r 51 130 12 1 24;
+
+    // Lift bottom left corner
+    t 100 r 48 -90 21 a 0 9
+    // Fold from left
+    t 100 r 37 -165 8 a 0 9
+    // Flatten leg
+    t 100 r 48 -60 9 a 0 9
+    // Lay leg flat
+    t 100 r 48 -80 21 9 0
+
+    // Fold along median
+    t 100 r 28 -90 19 5 22 2 14 15 18 23 7 r 38 -90 3;
+    t 100 r 28 -80 19 5 22 2 14 15 18 23 7 a 3;
+    // Open front leg
+    t 100 r 28 0 9 10 21 20 8;
+
+    // Pretty
+    r 50 -5 12
+    offset // Remove offset for all faces
+    r 55 5 17 a 3 r 55 -5 19 a 3 // Beak
+    a 12
+
+    // Show
+    t 100 tz -45
+    iao
+    t 1000 z 0.5
+    t 1000 zf
+    iao
+    t 1000 ty 360
+</div>
+</body>
+</html>

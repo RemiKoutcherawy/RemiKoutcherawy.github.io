@@ -12,6 +12,9 @@ Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://j
 
 [vue3dLocal.hmtl](https://remikoutcherawy.github.io/vue3dLocal.html) 
 
+With Three.js and ES6 modules
+[CocotteThree.html](https://remikoutcherawy.github.io/CocotteThree.html)
+
 Old code non minified
 
 [cocotteDebug.hmtl](https://remikoutcherawy.github.io/cocotteDebug.html)
