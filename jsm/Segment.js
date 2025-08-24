@@ -6,32 +6,11 @@ export class Segment {
     constructor(p1, p2) {
         this.p1 = p1;
         this.p2 = p2;
-        this.hover = false;
+
         this.select = 0;
     }
 
     // 2d distance from Segment to Point
-    static distance2d(x1, y1, x2, y2, x, y) {
-        // https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
-        // Handle case where the segment degenerates in a single point.
-        const l2 = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-        if (l2 === 0) {
-            return Math.sqrt((x - x1) * (x - x1) + (y - y1) * (y - y1));
-        }
-        // Consider the line extending the segment, parameterized as v + t (w - v).
-        // Find the projection of point p onto the line.
-        // It falls where t = [(p-v) . (w-v)] / |w-v|^2
-        const t = ((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1)) / l2;
-        if (t < 0) {
-            return Math.sqrt((x - x1) * (x - x1) + (y - y1) * (y - y1));
-        }
-        if (t > 1) {
-            return Math.sqrt((x - x2) * (x - x2) + (y - y2) * (y - y2));
-        }
-        const projectionX = x1 + t * (x2 - x1);
-        const projectionY = y1 + t * (y2 - y1);
-        return Math.sqrt((x - projectionX) * (x - projectionX) + (y - projectionY) * (y - projectionY));
-    }
 
     // Area counter clock wise, CCW, gives 2d signed distance between Point and Segment in 3d
     static CCW(a, b, c) {
@@ -103,20 +82,6 @@ export class Segment {
     }
 
     // Basic intersection used for tests, does not handle collinear, or superposed
-    static intersection2dBasicFlat(a, b, c, d) {
-        const v1_x = b.xf - a.xf;
-        const v1_y = b.yf - a.yf;
-        const v2_x = d.xf - c.xf;
-        const v2_y = d.yf - c.yf;
-        const s = (-v1_y * (a.xf - c.xf) + v1_x * (a.yf - c.yf)) / (-v2_x * v1_y + v1_x * v2_y);
-        const t = (v2_x * (a.yf - c.yf) - v2_y * (a.xf - c.xf)) / (-v2_x * v1_y + v1_x * v2_y);
-        if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
-            const xf = a.xf + (t * v1_x);
-            const yf = a.yf + (t * v1_y);
-            return new Point(xf, yf);
-        }
-        return undefined ;
-    }
 
     // Lines in 2D
     static intersection2dLines(a, b, c, d) {
@@ -187,7 +152,7 @@ export class Segment {
                         s = (b * f - c * e) / denominator
                         s = s < 0 ? 0 : s > 1 ? 1 : s;
                     } else {
-                        // Arbitrary point, here 0 => p1
+                        // Arbitrary point, here 0 => p
                         s = 0;
                     }
                     // Compute the closest on CD using s
@@ -225,8 +190,8 @@ export class Segment {
     }
 
     static project2d(s, p) {
-        // Line extending segment, parameterized as v + t (p2 - p1).
-        // It falls where t = [(p-p1) . (p2-p1)] / |p2-p1|^2
+        // Line extending segment, parameterized as v+t.(p2-p1)
+        // It falls where t = [(p-p1).(p2-p1)] / |p2-p1|^2
         const l2 = (s.p2.xf - s.p1.xf) * (s.p2.xf - s.p1.xf) + (s.p2.yf - s.p1.yf) * (s.p2.yf - s.p1.yf);
         const t = ((p.xf - s.p1.xf) * (s.p2.xf - s.p1.xf) + (p.yf - s.p1.yf) * (s.p2.yf - s.p1.yf)) / l2;
         if (t < 0 || t > 1) {

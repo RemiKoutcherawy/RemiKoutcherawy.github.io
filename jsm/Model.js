@@ -51,31 +51,8 @@ export class Model {
     }
 
     // Update hover2d3d on points, segments, faces 2d and 3d
-    hover2d3d(points, segments, faces) {
-        // Clean
-        this.points.forEach((p) => p.hover = false);
-        this.segments.forEach((s) => s.hover = false);
-        this.faces.forEach((f) => f.hover = false);
-        // Hover
-        if (points.length !== 0) {
-            points.forEach((p) => p.hover = true);
-        } else if (segments.length !== 0) {
-            segments.forEach((s) => s.hover = true);
-        } else if (faces.length !== 0) {
-            faces.forEach((f) => f.hover = true);
-        }
-    }
 
     // Handle click2d3d on points, segments, faces 2d and 3d
-    click2d3d(points, segments, faces) {
-        if (points.length !== 0) {
-            points.forEach((p) => p.select = (p.select + 1) % 3);
-        } else if (segments.length !== 0) {
-            segments.forEach((s) => s.select = (s.select + 1) % 3);
-        } else if (faces.length !== 0) {
-            faces.forEach((f) => f.select = (f.select + 1) % 3);
-        }
-    }
 
     // Index of Point or Segment or Face
     indexOf(object) {
@@ -692,7 +669,7 @@ export class Model {
         });
     }
 
-    // Move on a point p0 all following list of points
+    // Move on a point p all following list of points
     moveOnPoint(p0, points) {
         points.forEach(function (p) {
             p.x = p0.x;

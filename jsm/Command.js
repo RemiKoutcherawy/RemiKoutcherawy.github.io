@@ -21,8 +21,6 @@ export class Command {
     // Animation
     duration = 0;
     tStart = 0;
-    // Eventual CommandArea
-    commandArea;
 
     constructor(model) {
         this.model = model;
@@ -30,9 +28,6 @@ export class Command {
 
     // The main entry point executes a string of commands
     command(cde) {
-        if (this.commandArea !== undefined) {
-            this.commandArea.addLine(cde);
-        }
         // Define
         if (cde.startsWith('d') || cde.startsWith('define')) {
             // Reset
@@ -264,7 +259,7 @@ export class Command {
             const s = this.model.segments[tokenList[idx++]];
             this.model.moveOnSegment(s, p);
         } else if (tokenList[idx] === 'm' || tokenList[idx] === 'move') {
-            // Move 1 point by dx,dy,dz in 3D with animation : move dx dy dz p1 p2 p3...
+            // Move 1 point by dx,dy,dz in 3D with animation: move dx dy dz p1 p2 p3...
             idx++;
             const dx = tokenList[idx++] * k;
             const dy = tokenList[idx++] * k;
@@ -279,7 +274,7 @@ export class Command {
             this.model.flat(list);
             idx += list.length;
         } else if (tokenList[idx] === 'a' || tokenList[idx] === 'adjust') {
-            // Adjust points in 3D to equal 2D length of segments : a p1 p2 p3...
+            // Adjust points in 3D to equal 2D length of segments: a p1 p2 p3...
             idx++;
             list = this.listPoints(tokenList, idx);
             idx += list.length;
@@ -417,7 +412,7 @@ export class Command {
         else {
             console.log('Syntax error', tokenList[idx-2], tokenList[idx-1], tokenList[idx], tokenList[idx+1], tokenList[idx+2])
             idx = tokenList.length + 1;
-            throw new Error("Syntax error!", idx);
+            throw new Error("Syntax error!"+ idx);
         }
 
         // Keep state after executing

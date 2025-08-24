@@ -6,7 +6,7 @@ export class Face {
     constructor(points) {
         this.points = points;
         this.offset = 0;
-        this.hover = false;
+
         this.select = 0;
     }
 
@@ -57,53 +57,6 @@ export class Face {
         // (A+tAB).N = d <=> d<e front, d>e behind, else on plane
         return Vector3.dot(plane.normal, point) - Vector3.dot(plane.normal, plane.origin);
     }
-
-    // Face contains 2d point
-    static contains2d(face, xf, yf) {
-        // ray-casting algorithm based on
-        // https://wrf.ecse.rpi.edu/Research/Short_Notes/pnpoly.html
-
-        let inside = false;
-        const vs = face.points;
-        for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-            const xi = vs[i].xf, yi = vs[i].yf;
-            const xj = vs[j].xf, yj = vs[j].yf;
-            // Special case where the point is part of the face.
-            if (xi === xf && yi === yf) {
-                return true;
-            }
-            const intersect = ((yi > yf) !== (yj > yf)) && (xf < (xj - xi) * (yf - yi) / (yj - yi) + xi);
-            if (intersect) inside = !inside;
-        }
-        return inside;
-    }
-
-    // Face contains 3d point
-    static contains3d(face, xCanvas, yCanvas, view3d) {
-        // ray-casting algorithm based on
-        // https://wrf.ecse.rpi.edu/Research/Short_Notes/pnpoly.html
-
-        const x = xCanvas, y = yCanvas;
-        let inside = false;
-        const pts = face.points;
-        for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
-            const idxI = view3d.indexMap.get(pts[i]);
-            const idxJ = view3d.indexMap.get(pts[j]);
-            if (idxI === undefined || idxJ === undefined) continue;
-            const projI = view3d.projected[idxI];
-            const projJ = view3d.projected[idxJ];
-            if (!projI || !projJ) continue;
-            const xi = projI[0], yi = projI[1];
-            const xj = projJ[0], yj = projJ[1];
-            // Special case where the point is part of the face.
-            if (xi === xCanvas && yi === yCanvas) {
-                return true;
-            }
-
-            const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-            if (intersect) inside = !inside;
-        }
-        return inside;
-    }
 }
+    
 // 102 lines of code

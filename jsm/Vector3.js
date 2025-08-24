@@ -19,14 +19,6 @@ export class Vector3 {
     }
 
     // Distance between point C and line [A, B] return number
-    static pointLineDistance(C, A, B) {
-        const AC = Vector3.sub(C, A);
-        const BC = Vector3.sub(C, B);
-        const cross = Vector3.cross(AC, BC);
-        const AB = Vector3.sub(B, A);
-        const ab = Vector3.length3d(AB);
-        return ab === 0 ? Vector3.length3d(AC) : Vector3.length3d(cross) / ab;
-    }
 
     static dot(u, v) {
         return u.x * v.x + u.y * v.y + u.z * v.z;

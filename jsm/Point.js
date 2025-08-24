@@ -6,8 +6,6 @@ export class Point {
         this.x = Number(x);
         this.y = Number(y);
         this.z = Number(z);
-        // Helper
-        this.hover = false;
         this.select = 0;
     }
 
