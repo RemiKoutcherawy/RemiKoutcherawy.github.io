@@ -32,7 +32,7 @@
     #undoBtn:hover{background:#eef1f4}
     #runBtn{top:8px;left:100px;padding:8px;line-height:0;cursor:pointer}
     #runBtn:hover{background:#eef1f4}
-    #stepBtn{top:8px;left:146px;padding:8px;line-height:0;cursor:pointer}
+    #stepBtn{display:none;top:8px;left:146px;padding:8px;line-height:0;cursor:pointer}
     #stepBtn:hover{background:#eef1f4}
     /* noinspection CssUnusedSymbol -- toggled via classList.toggle('active', ...) */
     #stepBtn.active,#runBtn.active{background:#e6a817}
@@ -55,6 +55,7 @@
   </style>
 </head>
 
+<!--<body class="view2d-open command-area-open"> -->
 <body>
 <div>
   <canvas id="canvas2d"></canvas>
@@ -80,7 +81,7 @@
 <nav id="nav">
   <details name="nav-menu">
     <summary>Plis de base<span class="chev">›</span></summary>
-    <button type="button" data-load="all-folds">Tous les plis de base</button>
+    <button type="button" data-load="demo">Tous les plis de base</button>
     <button type="button" data-load="squash-fold">Squash fold</button>
     <button type="button" data-load="rabbit-ear-fold">Rabbit-ear fold</button>
     <button type="button" data-load="reverse-fold">Reverse fold</button>
@@ -93,7 +94,6 @@
     <summary>Exemples<span class="chev">›</span></summary>
     <button type="button" data-load="cocotte">Cocotte</button>
     <button type="button" data-load="plane">Plane</button>
-    <button type="button" data-load="boat">Bateau</button>
     <button type="button" data-load="test">Test</button>
   </details>
 
@@ -134,17 +134,7 @@ by3d p6 p1
 o -10 f1
 t 500 fit
 t 1000 r s9 -180 p2 a p5
-pause
-check
-// Square base
-d 200 200
-by2d p0 p2 by2d p1 p3
-c2d p0 p1 c2d p1 p2
-t 500 r s11 -180 p1 r s15 -180 p3 a p5 p2 p7
-t 500 r s6 -90 p7 r s7 -90 p5 a p2
-t 500 fit
-b3d s4 s11
-t 500 r s4 -180 p11 a p7
+
 </template>
 <template id="rabbit-ear-fold">
 // Rabbit-ear fold — fold a corner point up between two creases
@@ -187,11 +177,161 @@ by2d p0 p2 by2d p1 p3
 c2d p0 p1 c2d p1 p2
 t 1000 r s5 -180 p8 r s6 180 p7 a p2 p3 p5
 t 1000 fit
-t 1000 r s11 -90 p2 r s11 90 p3 a p5
+t 1000 r s11 90 p2 r s11 -90 p3 a p5
 check
 </template>
 <template id="petal-fold">
 // Petal fold — fold both sides of a flap to the center, then flatten
+d 200 200
+by2d p0 p2 by2d p1 p3
+c2d p0 p1 c2d p1 p2
+t 200 r s11 -180 p1 r s15 -180 p3 a p5 p2 p7
+t 200 r s6 -90 p7 r s7 -90 p5 a p2
+t 200 fit
+tz 45 z 0.71
+b3d s2 s4 b3d s0 s4 by3d p9 p11
+t 200 zoom 0.75 0 0 move 0 -75 0
+// Petal fold
+t 2000 r s31 -178 p2 a p5 p7
+t 100 fit
+</template>
+<template id="cocotte">
+// Cocotte
+define 200 200
+textures
+// Define crease pattern
+c3d p0 p1 c3d p0 p3 c3d p0 p2 c3d p1 p3 c3d p0 p8 c3d p8 p3
+c3d p0 p4 c3d p4 p1 c3d p6 p0 c3d p6 p1 c3d p6 p2 c3d p6 p3
+// Movements with Accelerate Decelerate Interpolator (iad)
+iad
+t 100 ty 180
+// Fold one corner
+offset 1 f13 f14 f30 f31
+t 100 r s54 -180 p3 p17 p19
+t 100 ty 180
+// Fold from top
+t 100 rotate s27 170 p5 p22 p2
+// Lift up top right corner
+t 100 r s53 -100 p22 a p2 p7 p18
+// Fold from right
+t 100 r s45 170 p7 p12 p1 a p2 p18
+// Flatten leg
+t 100 r s53 45 p22 a p2 p18
+// Lay leg flat
+t 100 r s53 30 p22 p2 p18
+// Lift up bottom right corner
+t 100 r s50 -100 p12 a p1 p24
+// Fold from bottom
+t 100 r s23 170 p0 p21 p4 a p1 p24
+// Flatten leg
+t 100 r s51 45 p24 a p1 p12
+// Lay leg flat
+t 100 r s51 80 p12 p1 p24 a p12
+// Lift bottom left corner
+t 100 r s48 -100 p21 a p0 p9
+// Fold from left
+t 100 r s37 -170 p8 a p0 p9
+// Flatten leg
+t 100 r s48 -45 p9 a p0 p9
+// Lay leg flat
+t 100 r s48 -70 p21 p9 p0 a p9
+// Fold along median and open beak
+t 100 r s28 -180 p19 p5 p7 p22 p2 p14 p15 p18 p23 r s38 -170 p3
+// Pretty
+r s50 -5 p12 a p1
+offset // Remove offset for all faces
+// Beak
+t 100 r s54 15 p19 r s55 15 p17 a p3
+// Tail
+t 100 r s13 -10 p24 p12 p1
+a p12 p24 p1
+// Show
+t 100 tz -45
+iao
+t 1000 z 0.5 0 50
+t 1000 fit
+iao
+t 1000 ty 360
+</template>
+
+<!-- Inline commands -->
+<template id="open">read</template>
+<template id="exportInstructions">instructions</template>
+<template id="exportSvg">svg</template>
+<template id="exportFold">fold</template>
+<template id="exportDiagrams">diagrams</template>
+<template id="undo">undo</template>
+<template id="run">run</template>
+<template id="labels">labels</template>
+<template id="textures">textures</template>
+
+<!-- Inline models -->
+<template id="test">
+  // Triangle base
+  d 200 200
+  by2d p0 p2 by2d p1 p3
+  c2d p0 p1 c2d p1 p2
+  t 1000 r s5 -180 p8 r s6 180 p7 a p2 p3 p5
+  t 1000 fit
+  t 1000 r s11 90 p2 r s11 -90 p3 a p5
+  check
+</template>
+<template id="demo">
+  // Squash fold — open a pocket and flatten it
+  d 200 200
+  t 100 tx -30
+  c2d p1 p2
+  o -1 f0
+  c2d p0 p1
+  t 500 r s6 -180 p3 p8 p2
+  c3d p0 p1
+  by3d p6 p1
+  o -10 f1
+  t 500 fit
+  t 1000 r s9 -180 p2 a p5
+  pause
+  // Inside and outside reverse folds
+  d 200 200
+  t 100 tx -30
+  by2d p1 p3
+  o -1 f1
+  t 200 r s4 -180 p2
+  split s4 0.5 sp p4
+  p3d s0 p4
+  b3d s7 s5
+  t 500 z 0.99 move 59 43 0
+  t 500 r s7 -180 p8 a p1
+  t 500 r s7 180 p8 a p1
+  t 500 fit
+  pause
+  // Rabbit-ear fold — fold a corner point up between two creases
+  d 200 200
+  t 100 tx -30
+  by2d p0 p2 by2d p1 p3
+  b2d s6 s1 b2d s7 s2
+  p2d s1 p5
+  t 1000 r s9 180 p6 a p2
+  pause
+  // Square base
+  d 200 200
+  by2d p0 p2 by2d p1 p3
+  c2d p0 p1 c2d p1 p2
+  t 500 r s11 -180 p1 r s15 -180 p3 a p5 p2 p7
+  t 500 r s6 -90 p7 r s7 -90 p5 a p2
+  t 500 fit
+  b3d s4 s11
+  t 500 r s4 -180 p11 a p7
+  pause
+  // Triangle base
+  d 200 200
+  t 100 tx -30
+  by2d p0 p2 by2d p1 p3
+  c2d p0 p1 c2d p1 p2
+  t 1000 r s5 -180 p8 r s6 180 p7 a p2 p3 p5
+  t 1000 r s11 90 p2 r s11 -90 p3 a p5
+  t 1000 fit
+  pause
+  // Petal fold — fold both sides of a flap to the center, then flatten
   d 200 200
   by2d p0 p2 by2d p1 p3
   c2d p0 p1 c2d p1 p2
@@ -202,12 +342,47 @@ check
   b3d s2 s4 b3d s0 s4 by3d p9 p11
   t 200 zoom 0.75 0 0 move 0 -75 0
   // Petal fold
-  t 1000 r s31 -178 p2 a p5 p7
-  check
-</template>
-<template id="cocotte">
-// Cocotte
+  t 2000 r s31 -178 p2 a p5 p7
+  pause
+  // Paper airplane by Vibe Mistral
   define 200 200
+  textures
+  // Center crease
+  across2d p0 p1
+  // Wing creases while the sheet is still flat
+  across2d p4 p1
+  across2d p4 p0
+  // Fold top corners to the center
+  bisector2d s2 s6
+  bisector2d s11 s6
+  offset -1 f0 f4 f5 f1 f3
+  t 1000 r s16 180 p2 p7
+  t 1000 r s20 -180 p3 p9
+  // Crease the folded flaps along the future wing line
+  split s15 0.5
+  split s3 0.5
+  by3d p10 p14
+  by3d p12 p15
+  // Fold in half along the center
+  offset -2 f1 f3 f6 f7 f9
+  t 1000 r s6 170 p0 p8 p13 p12 p3 p9 p15
+  t 200 ty -45
+  // Open the wings to fly
+  t 300 r s9 80 p1 p11
+  t 300 r s17 80 p0 p13
+  // Stand the fuselage up, wings toward the camera
+  t 500 tz 90
+  t 500 fit
+  // Show
+  iao
+  t 1000 z 0.5 0 0
+  t 1000 fit
+  iao
+  t 1000 ty 360
+  pause
+  // Cocotte
+  define 200 200
+  textures
   // Define crease pattern
   c3d p0 p1 c3d p0 p3 c3d p0 p2 c3d p1 p3 c3d p0 p8 c3d p8 p3
   c3d p0 p4 c3d p4 p1 c3d p6 p0 c3d p6 p1 c3d p6 p2 c3d p6 p3
@@ -263,32 +438,10 @@ check
   t 1000 ty 360
 </template>
 
-<!-- Inline commands -->
-<template id="open">read</template>
-<template id="exportInstructions">instructions</template>
-<template id="exportSvg">svg</template>
-<template id="exportFold">fold</template>
-<template id="exportDiagrams">diagrams</template>
-<template id="undo">undo</template>
-<template id="run">run</template>
-<template id="labels">labels</template>
-<template id="textures">textures</template>
-
-<!-- Inline models -->
-<template id="test">
-  // Triangle base
-  d 200 200
-  by2d p0 p2 by2d p1 p3
-  c2d p0 p1 c2d p1 p2
-  t 1000 r s5 -180 p8 r s6 180 p7 a p2 p3 p5
-  t 1000 fit
-  t 1000 r s11 90 p2 r s11 -90 p3 a p5
-  check
-</template>
-
 <template id="plane">
-  // Paper airplane
+  // Paper airplane by Vibe Mistral
   define 200 200
+  textures
   // Center crease
   across2d p0 p1
   // Wing creases while the sheet is still flat
@@ -296,31 +449,25 @@ check
   across2d p4 p0
   // Fold top corners to the center
   bisector2d s2 s6
-  bisector2d s5 s6
-  offset -1 f0
-  t 200 r s16 -180 p2 p7
-  offset -1 f7
-  t 200 r s20 180 p3 p9
+  bisector2d s11 s6
+  offset -1 f0 f4 f5 f1 f3
+  t 1000 r s16 180 p2 p7
+  t 1000 r s20 -180 p3 p9
   // Crease the folded flaps along the future wing line
   split s15 0.5
   split s3 0.5
   by3d p10 p14
   by3d p12 p15
   // Fold in half along the center
-  offset 2 f1 f3 f6 f7 f9
-  t 200 r s6 180 p0 p8 p13 p12 p3 p9 p15
-  // Fold both wings down
-  offset -3 f5 f0
-  t 200 r s9 180 p1 p11
-  offset 3 f1 f9
-  t 200 r s17 180 p0 p13
+  offset -2 f1 f3 f6 f7 f9
+  t 1000 r s6 170 p0 p8 p13 p12 p3 p9 p15
+  t 200 ty -45
   // Open the wings to fly
-  t 300 r s9 -90 p1 p11
-  t 300 r s17 -90 p0 p13
+  t 300 r s9 80 p1 p11
+  t 300 r s17 80 p0 p13
   // Stand the fuselage up, wings toward the camera
-  t 200 ty -90
-  t 200 tx 35
-  t 200 fit
+  t 500 tz 90
+  t 500 fit
   // Show
   iao
   t 1000 z 0.5 0 0
@@ -329,68 +476,60 @@ check
   t 1000 ty 360
 </template>
 
-<template id="boat">
-  // Boat
-  define 210 300
+<template id="cocotte">
+  // Cocotte
+  define 200 200
   textures
-  // Fold top on bottom
-  across2d p1 p2
-  offset -1 F0
-  t 200 r s6 -180 p2 p3
-  // t 200 fit
-  // Crease edges at 45°
-  across3d p4 p5
-  bisector3d s7 s9
-  bisector3d s6 s9
-  // Fold corners
-  offset -1 f3 f0
-  t 200 rotate s13 -180 p4
-  t 200 rotate s17 180 p5
-  // Crease bottom and top
-  by3d p9 p12
-  by3d p10 p11
-  // Fold back
-  offset -2 F5 F6
-  t 200 rotate s24 180 p3 p8 p2
-  // Crease on 2D
-  bisector2d s3 s24 bisector2d s23 s16
-  // Fold corners
-  t 200 rotate s27 -180 p3 rotate s29 180 p2
-  // Fold front
-  offset 2 F8 F9
-  t 200 rotate s25 180 p0 p1 p7
-  // Crease on 2D
-  bisector2d s25 s12 bisector2d s1 s21
-  // Fold corners
-  t 200 rotate s31 180 p0
-  t 200 rotate s33 -180 p1
-  // Crease top
-  by3d p15 p16
-  // Open
-  t 200 r s15 -180 p4 p5 p8 p14 p21 p25 p26  r s9 180 p1 p2 p11 p12 p16 p18 p19 p22
-  // t 200 fit
-  // Turn on left
-  t 200 tz 45
-  // Crease diagonal
-  perpendicular3d s13 p15
-  t 200 ty 45
-  // Rotate triangle in front
-  t 400 r s53 180 p11 p12 p1 p2
-  // Rotate triangle in back
-  t 400 r s53 -180 p9 p10 p0 p3
-  t 200 ty -45
-  t 200 fit
-  // Turn on right
-  t 200 tz -45
-  // Close Fixme
-  t 200 r s15 -180 p4 p5 p14 p8 p21 p25 p26 p32 p33 p27 p28 p30 p29  r s9 -180 p1 p2 p11 p12 p16 p18 p19 p22 p34 a p33 mop p33 p30 p29
-  t 200 fit
-  // Open rotate around 3
-  t 1000 r s36 135 p32 p14 p33 p27 p28 p4 p5 p30 p29  r s36 -135 p31 p13 p34  a p9 p12 p0 p1 p2 p3 mop p12 p11 mop p9 p10 mop p25 p0 mop p23 p1
-  t 200 fit
+  // Define crease pattern
+  c3d p0 p1 c3d p0 p3 c3d p0 p2 c3d p1 p3 c3d p0 p8 c3d p8 p3
+  c3d p0 p4 c3d p4 p1 c3d p6 p0 c3d p6 p1 c3d p6 p2 c3d p6 p3
+  // Movements with Accelerate Decelerate Interpolator (iad)
+  iad
+  t 100 ty 180
+  // Fold one corner
+  offset 1 f13 f14 f30 f31
+  t 100 r s54 -180 p3 p17 p19
+  t 100 ty 180
+  // Fold from top
+  t 100 rotate s27 170 p5 p22 p2
+  // Lift up top right corner
+  t 100 r s53 -100 p22 a p2 p7 p18
+  // Fold from right
+  t 100 r s45 170 p7 p12 p1 a p2 p18
+  // Flatten leg
+  t 100 r s53 45 p22 a p2 p18
+  // Lay leg flat
+  t 100 r s53 30 p22 p2 p18
+  // Lift up bottom right corner
+  t 100 r s50 -100 p12 a p1 p24
+  // Fold from bottom
+  t 100 r s23 170 p0 p21 p4 a p1 p24
+  // Flatten leg
+  t 100 r s51 45 p24 a p1 p12
+  // Lay leg flat
+  t 100 r s51 80 p12 p1 p24 a p12
+  // Lift bottom left corner
+  t 100 r s48 -100 p21 a p0 p9
+  // Fold from left
+  t 100 r s37 -170 p8 a p0 p9
+  // Flatten leg
+  t 100 r s48 -45 p9 a p0 p9
+  // Lay leg flat
+  t 100 r s48 -70 p21 p9 p0 a p9
+  // Fold along median and open beak
+  t 100 r s28 -180 p19 p5 p7 p22 p2 p14 p15 p18 p23 r s38 -170 p3
+  // Pretty
+  r s50 -5 p12 a p1
+  offset // Remove offset for all faces
+  // Beak
+  t 100 r s54 15 p19 r s55 15 p17 a p3
+  // Tail
+  t 100 r s13 -10 p24 p12 p1
+  a p12 p24 p1
   // Show
+  t 100 tz -45
   iao
-  t 1000 z 0.5 0 0
+  t 1000 z 0.5 0 50
   t 1000 fit
   iao
   t 1000 ty 360
@@ -2433,7 +2572,7 @@ class ReadWrite {
         return new Promise((resolve) => {
             const input = document.createElement('input');
             input.type = 'file';
-            input.accept = '.txt,.fold,.json,text/plain';
+            input.accept = '.txt,text/plain';
             input.onchange = (e) => {
                 resolve(/** @type {HTMLInputElement} */ (e.target).files?.[0] || null);
             };
@@ -2846,6 +2985,12 @@ class Command {
             this.tokenTodo = [];
             this.iToken = 0;
             this.instructions = [];
+            // A fresh model replaces whatever script was running before, so any
+            // leftover pause (e.g. a prior template's 'pause' line) or in-flight
+            // animation no longer applies — without this, the new script sits
+            // queued forever behind a stale State.pause/State.anim (see stepMode
+            // below, which still re-pauses immediately if that mode is armed).
+            this.model.state = State.run;
         } else if (tokens[0] === 'u' || tokens[0] === 'undo') {
             // Drop the snapshot of the live model; runUndo restores the previous one.
             if (this.done.length > 0) {
@@ -3523,10 +3668,10 @@ class Helper {
 
     static FOLD_AMBER = '#e6a817';
     static VALLEY_COLOR = 'green';
-    static MOUNTAIN_COLOR = 'firebrick';
 
-    // Draw drag preview when down on a point, segment, or face: a filled arrow for
-    // creasing (colored by the mountain/valley the drag would set), a hollow arrow
+    // Draw drag preview when down on a point, segment, or face: a filled arrow
+    // for creasing (green — a crease has no mountain/valley until it's
+    // actually folded) or moving a selected point (orange), a hollow arrow
     // only when the drag will actually fold the face (willFold()) — see Arrow.svg.
     draw() {
         if (!this.downPoint && !this.downSegment && !this.downFace) {
@@ -3536,10 +3681,7 @@ class Helper {
         if (this.downFace && this.willFold()) {
             this.drawHollowArrow(context, this.firstX, this.firstY, this.currentX, this.currentY);
         } else {
-            let color = 'orange';
-            if (!this.moving) {
-                color = this.assignmentFor() === 'M' ? Helper.MOUNTAIN_COLOR : Helper.VALLEY_COLOR;
-            }
+            const color = this.moving ? 'orange' : Helper.VALLEY_COLOR;
             this.drawFilledArrow(context, this.firstX, this.firstY, this.currentX, this.currentY, color);
         }
         if (this.label) {
@@ -4002,61 +4144,44 @@ class Helper {
         this.command.command(`${base}${suffix} ${args.join(' ')}`);
     }
 
-    // Screen-space drag direction sets mountain/valley: dragging toward the
-    // bottom of the screen creases a valley, toward the top a mountain.
-    assignmentFor() {
-        return (this.currentY - this.firstY) < 0 ? 'M' : 'V';
-    }
-
     // command.command() only enqueues — the model applies it on the next
     // animation frame. A crease command is never animated ('t ...'), so it is
     // always fully applied by exactly one command.anim() call; running that
-    // now (only when nothing else is already mid-animation) lets the mark
-    // gesture tag the resulting segment(s) immediately instead of a frame late.
+    // now (only when nothing else is already mid-animation) shows the result
+    // immediately instead of a frame late. Also rebuilds the WebGL buffers
+    // right away when something was actually applied: this bypasses the
+    // render loop's own command.anim() check (the one that normally gates
+    // initBuffers()/initModelView()), so without this the loop's next call
+    // finds nothing left to apply and never uploads the change to canvas3d,
+    // even though the model (and canvas2d, drawn straight from it) already
+    // reflects it.
     runQueuedNow() {
-        if (this.model.state === State.run) {
-            this.command.anim();
+        if (this.model.state === State.run && this.command.anim()) {
+            this.view3d?.initBuffers();
+            this.view3d?.initModelView();
         }
     }
 
-    /** Tag every segment created since `before` (a Set snapshot) with assignment. */
-    tagNewSegments(before, assignment) {
-        this.model.segments.forEach(s => {
-            if (!before.has(s)) s.assignment = assignment;
-        });
-    }
-
     // Plain: straight crease through both points. Ctrl/Cmd: the crease that
-    // brings one point onto the other once folded.
+    // brings one point onto the other once folded. Just marks the crease —
+    // mountain/valley is only meaningful once actually folded, so the new
+    // segment is left unassigned ('U') regardless of drag direction.
     creaseTwoPoints(a, b) {
-        const before = new Set(this.model.segments);
-        const assignment = this.assignmentFor();
         this.sendCmd(this.precise ? 'c' : 'by', a, b);
         this.runQueuedNow();
-        this.tagNewSegments(before, assignment);
-        // 'by' between two already-connected points reuses the existing edge
-        // instead of creating a new one — tag it too.
-        const direct = this.model.getSegment(a, b);
-        if (direct) direct.assignment = assignment;
     }
 
     // Plain: crease through the point, perpendicular to the segment. Ctrl/Cmd:
     // the crease that brings the segment's line onto the point once folded.
     creasePointSegment(point, segment) {
-        const before = new Set(this.model.segments);
-        const assignment = this.assignmentFor();
         this.sendCmd(this.precise ? 'parallel' : 'p', segment, point);
         this.runQueuedNow();
-        this.tagNewSegments(before, assignment);
     }
 
     // The only sensible crease between two segments: their bisector.
     creaseTwoSegments(a, b) {
-        const before = new Set(this.model.segments);
-        const assignment = this.assignmentFor();
         this.sendCmd('b', a, b);
         this.runQueuedNow();
-        this.tagNewSegments(before, assignment);
     }
 
     rotatePointIds(axis) {
@@ -5209,8 +5334,10 @@ class Label {
       syncToggles();
     }
 
+
     // Chargement du template "test" au lancement
-    load('test');
+    load('demo');
+
   }
 
 
