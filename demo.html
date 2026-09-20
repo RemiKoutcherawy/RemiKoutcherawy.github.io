@@ -216,10 +216,7 @@ t 100 fit
   d 200 200
   by2d p0 p2 by2d p1 p3
   c2d p0 p1 c2d p1 p2
-  t 1000 r s5 -180 p8 r s6 180 p7 a p2 p3 p5
-  t 1000 fit
-  t 1000 r s11 90 p2 r s11 -90 p3 a p5
-  check
+  t 1000 r s5 -180 p8 r s6 180 p7 r s13 -180 p5 a p2 p3
 </template>
 
 <template id="plane">
@@ -1650,37 +1647,108 @@ class Model {
     adjust(point) {
         // Take all segments containing point p
         const segments = this.searchSegmentsOnePoint(point);
+        const neighbors = segments.map((s) => ({
+            other: s.p1 === point ? s.p2 : s.p1,
+            lg2d: Segment.length2d(s), // Should not change
+        }));
+        // Matching each neighbor's 2D length pins `point` onto a sphere around
+        // it. Two spheres around two *distinct* centers narrow that down to a
+        // circle; a third, non-coincident one narrows it further to (up to) a
+        // point — which is what the average below converges to. But folding
+        // routinely stacks distinct neighbors onto the very same spot (layers
+        // coming together): then there are really only two distinct spheres
+        // however many segments point at them, and no amount of iterating can
+        // narrow a circle down further. Solve that case directly instead.
+        const clusters = Model.clusterByPosition(neighbors);
+        if (clusters.length === 2) return this.adjustOnCircle(point, clusters, neighbors.length > 2);
         let max = 0.1;
         // Iterate while the length difference between 2d and 3d is > 1e-3
         for (let i = 0; max > 0.001 && i < 200; i++) {
             max = 0;
             // Pm is the medium point
             const pm = new Vector3(0, 0, 0);
-            for (const s of segments) {
-                const lg3d = Segment.length3d(s) / this.scale;
+            for (const {other, lg2d} of neighbors) {
+                const lg3d = Vector3.distance(point, other) / this.scale;
                 if (lg3d === 0) continue;
-                const lg2d = Segment.length2d(s); // Should not change
                 const d = Math.abs(lg2d - lg3d);
                 if (d > max) max = d;
                 // Move B = A + AB * r with r = l2d / l3d
                 // AB * r is based on length 3d to match length 2d
                 const r = lg2d / lg3d;
-                let other = null;
-                if (s.p2 === point) other = s.p1;
-                else if (s.p1 === point) other = s.p2;
-                if (!other) continue;
                 pm.x += other.x + (point.x - other.x) * r;
                 pm.y += other.y + (point.y - other.y) * r;
                 pm.z += other.z + (point.z - other.z) * r;
             }
             // Set Point with an average position taking all segments
-            if (segments.length > 0) {
-                point.x = pm.x / segments.length;
-                point.y = pm.y / segments.length;
-                point.z = pm.z / segments.length;
+            if (neighbors.length > 0) {
+                point.x = pm.x / neighbors.length;
+                point.y = pm.y / neighbors.length;
+                point.z = pm.z / neighbors.length;
             }
         }
         return max;
+    }
+
+    // Group {other, lg2d} neighbors whose `other` point is (nearly) at the
+    // same current 3D position — paper folded them together. Only the first
+    // one found in each such group can pin `point` down any further; later
+    // ones would just repeat the same sphere.
+    static clusterByPosition(neighbors, eps = 0.5) {
+        const clusters = [];
+        for (const n of neighbors) {
+            if (!clusters.some((c) => Vector3.distance(c.other, n.other) < eps)) clusters.push(n);
+        }
+        return clusters;
+    }
+
+    // Exactly two independent references: place `point` on the circle where
+    // their two spheres meet, at whichever point of that circle is closest to
+    // where `point` currently sits — the same "stay near your current path"
+    // rule the average in adjust() follows one small step at a time, just
+    // solved directly since no amount of iterating that average can narrow a
+    // circle down to a point on its own.
+    adjustOnCircle(point, clusters, snap = false) {
+        const [c1, c2] = clusters;
+        const A = c1.other, B = c2.other;
+        const rA = c1.lg2d * this.scale, rB = c2.lg2d * this.scale;
+        const d = Vector3.distance(A, B);
+        if (d === 0) return 0.1; // both spheres share a center: leave point be
+        const u = Vector3.scale(Vector3.sub(B, A), 1 / d);
+        // Distance from A to the circle's center along axis AB, then the
+        // circle's own radius (law of cosines); clamp for near-misses caused
+        // by substep floating-point drift rather than a real inconsistency.
+        const a = Math.max(0, Math.min(d, (d * d + rA * rA - rB * rB) / (2 * d)));
+        const h = Math.sqrt(Math.max(rA * rA - a * a, 0));
+        const center = Vector3.add(A, Vector3.scale(u, a));
+        const toPoint = Vector3.sub(point, center);
+        let perp = Vector3.sub(toPoint, Vector3.scale(u, Vector3.dot(toPoint, u)));
+        let perpLen = Vector3.length3d(perp);
+        if (perpLen < 1e-9) {
+            // point sits exactly on the axis: any direction on the circle is as good
+            const arbitrary = Math.abs(u.x) < 0.9 ? {x: 1, y: 0, z: 0} : {x: 0, y: 1, z: 0};
+            perp = Vector3.sub(arbitrary, Vector3.scale(u, Vector3.dot(arbitrary, u)));
+            perpLen = Vector3.length3d(perp);
+        }
+        const target = Vector3.add(center, Vector3.scale(perp, h / perpLen));
+        // Stacked neighbors mean a flat-ish fold, where the circle's free angle
+        // is normally settled by another layer: if some other point already
+        // sits on both spheres, land exactly on it rather than merely near it.
+        // Not for two plain neighbors (`snap` false): a mirror-image point on
+        // both spheres would then be an unrelated match.
+        const onCircle = (q) => q !== point && q !== A && q !== B
+            && Math.abs(Vector3.distance(q, A) / this.scale - c1.lg2d) < 0.05
+            && Math.abs(Vector3.distance(q, B) / this.scale - c2.lg2d) < 0.05;
+        const snapTo = snap ? this.points
+            .filter(onCircle)
+            .sort((q, r) => Vector3.distance(q, target) - Vector3.distance(r, target))[0] : null;
+        const dest = snapTo ?? target;
+        point.x = dest.x;
+        point.y = dest.y;
+        point.z = dest.z;
+        return Math.max(
+            Math.abs(Vector3.distance(point, A) / this.scale - c1.lg2d),
+            Math.abs(Vector3.distance(point, B) / this.scale - c2.lg2d),
+        );
     }
 
     // Adjust list of points 3d
@@ -2528,6 +2596,8 @@ class Command {
     // Time interpolated at an instant 'p' preceding and at instant 'n' now
     tpi = 0;
     tni = 1;
+    // Rotation axes of the current animated line, frozen at its start (Segment -> {p1, p2})
+    frozenAxes = new Map();
     // Interpolator used in anim() to map tn (time normalized) to tni (time interpolated)
     interpolator = Interpolator.LinearInterpolator;
     // Animation
@@ -2722,6 +2792,7 @@ class Command {
         // wrong stable fold instead of the one continuous small motions converge to.
         // Replay this frame's motion as small fixed-size substeps so the result only
         // depends on the animated distance, not on how many real frames covered it.
+        if (this.tpi === 0) this.freezeRotateAxes(iBeginAnim);
         const maxStep = 0.01;
         const steps = Math.max(1, Math.ceil(Math.abs(targetTni - this.tpi) / maxStep));
         for (let i = 1; i <= steps; i++) {
@@ -2736,6 +2807,7 @@ class Command {
         if (tn >= 1) {
             this.tni = 1;
             this.tpi = 0;
+            this.frozenAxes.clear();
             if (this.model.snap) {
                 this.model.snapPoints();
             }
@@ -2745,6 +2817,25 @@ class Command {
         }
         this.iToken = iBeginAnim;
         return true;
+    }
+
+    // A rotated point can itself be another simultaneous rotation's axis endpoint
+    // (e.g. `t 1000 r s6 180 p7 r s13 -90 p5` where s13 = p7-p4): re-reading the
+    // axis live, substep after substep, would make it drift along with that point.
+    // Snapshot the axis of every `r` of the line before any of them has run, so the
+    // last rotation does not see an axis already moved by the earlier ones.
+    freezeRotateAxes(iBegin) {
+        this.frozenAxes.clear();
+        for (let i = iBegin; i < this.tokenTodo.length && this.tokenTodo[i] !== '\n'; i++) {
+            if (this.tokenTodo[i] !== 'r' && this.tokenTodo[i] !== 'rotate') continue;
+            const s = this.listTokens(this.tokenTodo, i + 1, 's')[0];
+            if (s && !this.frozenAxes.has(s)) {
+                this.frozenAxes.set(s, {
+                    p1: {x: s.p1.x, y: s.p1.y, z: s.p1.z},
+                    p2: {x: s.p2.x, y: s.p2.y, z: s.p2.z},
+                });
+            }
+        }
     }
 
     doneInstructions(idxBefore, idxAfter) {
@@ -2898,10 +2989,13 @@ function splitSegment(cmd) {
     }
 }
 
+// Uses the axis frozen at the start of the animated line (see freezeRotateAxes),
+// or the live segment for a plain non-animated 'r'.
 function rotate(cmd) {
     const s = cmd.token('s');
     const angle = Number(cmd.next()) * cmd.dt;
-    cmd.model.rotate(s, angle, cmd.tokens('p'));
+    const axis = cmd.model.state === State.anim ? cmd.frozenAxes.get(s) : undefined;
+    cmd.model.rotate(axis ?? s, angle, cmd.tokens('p'));
 }
 
 function move(cmd) {
@@ -3877,7 +3971,16 @@ class Helper {
             );
         }
         if (this.view3d?.faceDepth) {
-            faces.sort((a, b) => this.view3d.faceDepth(a) - this.view3d.faceDepth(b));
+            // Folding a flat model routinely stacks faces at the exact same depth
+            // (e.g. two layers folded flush): faceDepth alone can't tell them apart,
+            // and a stable sort would then always resolve to the same array index.
+            // Break exact ties in favor of a face the user already explicitly
+            // selected — a stronger signal of intent than creation order.
+            faces.sort((a, b) => {
+                const d = this.view3d.faceDepth(a) - this.view3d.faceDepth(b);
+                if (Math.abs(d) > 1e-6) return d;
+                return (b.select ? 1 : 0) - (a.select ? 1 : 0);
+            });
         }
         return faces;
     }
