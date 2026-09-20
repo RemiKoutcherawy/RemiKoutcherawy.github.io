@@ -12,6 +12,9 @@
     /* noinspection CssUnusedSymbol -- #overlay is a canvas created at runtime by View3d.js */
     #canvas3d,#overlay{position:absolute;top:0;left:0;width:100%;height:var(--split)}
     #canvas3d{border:1px solid black}
+    /* Touch screens: the canvases handle their own gestures, the browser must not
+       scroll, pinch-zoom, double-tap-zoom or select text on them (iPad Safari) */
+    #canvas2d,#canvas3d,#overlay{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
     #overlay{z-index:1}
     #canvas2d{display:none;position:absolute;top:0;left:0;width:50%;height:var(--split);border:1px solid black}
     body.view2d-open #canvas2d{display:block}
@@ -32,7 +35,7 @@
     #undoBtn:hover{background:#eef1f4}
     #runBtn{top:8px;left:100px;padding:8px;line-height:0;cursor:pointer}
     #runBtn:hover{background:#eef1f4}
-    #stepBtn{display:none;top:8px;left:146px;padding:8px;line-height:0;cursor:pointer}
+    #stepBtn{top:8px;left:146px;padding:8px;line-height:0;cursor:pointer}
     #stepBtn:hover{background:#eef1f4}
     /* noinspection CssUnusedSymbol -- toggled via classList.toggle('active', ...) */
     #stepBtn.active,#runBtn.active{background:#e6a817}
@@ -55,8 +58,8 @@
   </style>
 </head>
 
-<!--<body class="view2d-open command-area-open"> -->
-<body>
+<body class="view2d-open command-area-open">
+<!--<body>-->
 <div>
   <canvas id="canvas2d"></canvas>
   <canvas id="canvas3d"></canvas>
@@ -81,7 +84,7 @@
 <nav id="nav">
   <details name="nav-menu">
     <summary>Plis de base<span class="chev">›</span></summary>
-    <button type="button" data-load="demo">Tous les plis de base</button>
+    <button type="button" data-load="all-folds">Tous les plis de base</button>
     <button type="button" data-load="squash-fold">Squash fold</button>
     <button type="button" data-load="rabbit-ear-fold">Rabbit-ear fold</button>
     <button type="button" data-load="reverse-fold">Reverse fold</button>
@@ -195,64 +198,6 @@ t 200 zoom 0.75 0 0 move 0 -75 0
 t 2000 r s31 -178 p2 a p5 p7
 t 100 fit
 </template>
-<template id="cocotte">
-// Cocotte
-define 200 200
-textures
-// Define crease pattern
-c3d p0 p1 c3d p0 p3 c3d p0 p2 c3d p1 p3 c3d p0 p8 c3d p8 p3
-c3d p0 p4 c3d p4 p1 c3d p6 p0 c3d p6 p1 c3d p6 p2 c3d p6 p3
-// Movements with Accelerate Decelerate Interpolator (iad)
-iad
-t 100 ty 180
-// Fold one corner
-offset 1 f13 f14 f30 f31
-t 100 r s54 -180 p3 p17 p19
-t 100 ty 180
-// Fold from top
-t 100 rotate s27 170 p5 p22 p2
-// Lift up top right corner
-t 100 r s53 -100 p22 a p2 p7 p18
-// Fold from right
-t 100 r s45 170 p7 p12 p1 a p2 p18
-// Flatten leg
-t 100 r s53 45 p22 a p2 p18
-// Lay leg flat
-t 100 r s53 30 p22 p2 p18
-// Lift up bottom right corner
-t 100 r s50 -100 p12 a p1 p24
-// Fold from bottom
-t 100 r s23 170 p0 p21 p4 a p1 p24
-// Flatten leg
-t 100 r s51 45 p24 a p1 p12
-// Lay leg flat
-t 100 r s51 80 p12 p1 p24 a p12
-// Lift bottom left corner
-t 100 r s48 -100 p21 a p0 p9
-// Fold from left
-t 100 r s37 -170 p8 a p0 p9
-// Flatten leg
-t 100 r s48 -45 p9 a p0 p9
-// Lay leg flat
-t 100 r s48 -70 p21 p9 p0 a p9
-// Fold along median and open beak
-t 100 r s28 -180 p19 p5 p7 p22 p2 p14 p15 p18 p23 r s38 -170 p3
-// Pretty
-r s50 -5 p12 a p1
-offset // Remove offset for all faces
-// Beak
-t 100 r s54 15 p19 r s55 15 p17 a p3
-// Tail
-t 100 r s13 -10 p24 p12 p1
-a p12 p24 p1
-// Show
-t 100 tz -45
-iao
-t 1000 z 0.5 0 50
-t 1000 fit
-iao
-t 1000 ty 360
-</template>
 
 <!-- Inline commands -->
 <template id="open">read</template>
@@ -275,167 +220,6 @@ t 1000 ty 360
   t 1000 fit
   t 1000 r s11 90 p2 r s11 -90 p3 a p5
   check
-</template>
-<template id="demo">
-  // Squash fold — open a pocket and flatten it
-  d 200 200
-  t 100 tx -30
-  c2d p1 p2
-  o -1 f0
-  c2d p0 p1
-  t 500 r s6 -180 p3 p8 p2
-  c3d p0 p1
-  by3d p6 p1
-  o -10 f1
-  t 500 fit
-  t 1000 r s9 -180 p2 a p5
-  pause
-  // Inside and outside reverse folds
-  d 200 200
-  t 100 tx -30
-  by2d p1 p3
-  o -1 f1
-  t 200 r s4 -180 p2
-  split s4 0.5 sp p4
-  p3d s0 p4
-  b3d s7 s5
-  t 500 z 0.99 move 59 43 0
-  t 500 r s7 -180 p8 a p1
-  t 500 r s7 180 p8 a p1
-  t 500 fit
-  pause
-  // Rabbit-ear fold — fold a corner point up between two creases
-  d 200 200
-  t 100 tx -30
-  by2d p0 p2 by2d p1 p3
-  b2d s6 s1 b2d s7 s2
-  p2d s1 p5
-  t 1000 r s9 180 p6 a p2
-  pause
-  // Square base
-  d 200 200
-  by2d p0 p2 by2d p1 p3
-  c2d p0 p1 c2d p1 p2
-  t 500 r s11 -180 p1 r s15 -180 p3 a p5 p2 p7
-  t 500 r s6 -90 p7 r s7 -90 p5 a p2
-  t 500 fit
-  b3d s4 s11
-  t 500 r s4 -180 p11 a p7
-  pause
-  // Triangle base
-  d 200 200
-  t 100 tx -30
-  by2d p0 p2 by2d p1 p3
-  c2d p0 p1 c2d p1 p2
-  t 1000 r s5 -180 p8 r s6 180 p7 a p2 p3 p5
-  t 1000 r s11 90 p2 r s11 -90 p3 a p5
-  t 1000 fit
-  pause
-  // Petal fold — fold both sides of a flap to the center, then flatten
-  d 200 200
-  by2d p0 p2 by2d p1 p3
-  c2d p0 p1 c2d p1 p2
-  t 200 r s11 -180 p1 r s15 -180 p3 a p5 p2 p7
-  t 200 r s6 -90 p7 r s7 -90 p5 a p2
-  t 200 fit
-  tz 45 z 0.71
-  b3d s2 s4 b3d s0 s4 by3d p9 p11
-  t 200 zoom 0.75 0 0 move 0 -75 0
-  // Petal fold
-  t 2000 r s31 -178 p2 a p5 p7
-  pause
-  // Paper airplane by Vibe Mistral
-  define 200 200
-  textures
-  // Center crease
-  across2d p0 p1
-  // Wing creases while the sheet is still flat
-  across2d p4 p1
-  across2d p4 p0
-  // Fold top corners to the center
-  bisector2d s2 s6
-  bisector2d s11 s6
-  offset -1 f0 f4 f5 f1 f3
-  t 1000 r s16 180 p2 p7
-  t 1000 r s20 -180 p3 p9
-  // Crease the folded flaps along the future wing line
-  split s15 0.5
-  split s3 0.5
-  by3d p10 p14
-  by3d p12 p15
-  // Fold in half along the center
-  offset -2 f1 f3 f6 f7 f9
-  t 1000 r s6 170 p0 p8 p13 p12 p3 p9 p15
-  t 200 ty -45
-  // Open the wings to fly
-  t 300 r s9 80 p1 p11
-  t 300 r s17 80 p0 p13
-  // Stand the fuselage up, wings toward the camera
-  t 500 tz 90
-  t 500 fit
-  // Show
-  iao
-  t 1000 z 0.5 0 0
-  t 1000 fit
-  iao
-  t 1000 ty 360
-  pause
-  // Cocotte
-  define 200 200
-  textures
-  // Define crease pattern
-  c3d p0 p1 c3d p0 p3 c3d p0 p2 c3d p1 p3 c3d p0 p8 c3d p8 p3
-  c3d p0 p4 c3d p4 p1 c3d p6 p0 c3d p6 p1 c3d p6 p2 c3d p6 p3
-  // Movements with Accelerate Decelerate Interpolator (iad)
-  iad
-  t 100 ty 180
-  // Fold one corner
-  offset 1 f13 f14 f30 f31
-  t 100 r s54 -180 p3 p17 p19
-  t 100 ty 180
-  // Fold from top
-  t 100 rotate s27 170 p5 p22 p2
-  // Lift up top right corner
-  t 100 r s53 -100 p22 a p2 p7 p18
-  // Fold from right
-  t 100 r s45 170 p7 p12 p1 a p2 p18
-  // Flatten leg
-  t 100 r s53 45 p22 a p2 p18
-  // Lay leg flat
-  t 100 r s53 30 p22 p2 p18
-  // Lift up bottom right corner
-  t 100 r s50 -100 p12 a p1 p24
-  // Fold from bottom
-  t 100 r s23 170 p0 p21 p4 a p1 p24
-  // Flatten leg
-  t 100 r s51 45 p24 a p1 p12
-  // Lay leg flat
-  t 100 r s51 80 p12 p1 p24 a p12
-  // Lift bottom left corner
-  t 100 r s48 -100 p21 a p0 p9
-  // Fold from left
-  t 100 r s37 -170 p8 a p0 p9
-  // Flatten leg
-  t 100 r s48 -45 p9 a p0 p9
-  // Lay leg flat
-  t 100 r s48 -70 p21 p9 p0 a p9
-  // Fold along median and open beak
-  t 100 r s28 -180 p19 p5 p7 p22 p2 p14 p15 p18 p23 r s38 -170 p3
-  // Pretty
-  r s50 -5 p12 a p1
-  offset // Remove offset for all faces
-  // Beak
-  t 100 r s54 15 p19 r s55 15 p17 a p3
-  // Tail
-  t 100 r s13 -10 p24 p12 p1
-  a p12 p24 p1
-  // Show
-  t 100 tz -45
-  iao
-  t 1000 z 0.5 0 50
-  t 1000 fit
-  iao
-  t 1000 ty 360
 </template>
 
 <template id="plane">
@@ -533,21 +317,6 @@ t 1000 ty 360
   t 1000 fit
   iao
   t 1000 ty 360
-</template>
-
-<!-- Template pour tester le Reverse Inside Fold (bec de la grue) -->
-<template id="reverse-inside-test">
-  // Test du Reverse Inside Fold
-  define 200 200
-  // Créer une base simple avec une pliure centrale
-  by2d p0 p2
-  split s2 0.50 // Crée p4
-  split s1 0.50 // Crée p5
-  by2d p4 p5 // Crée p6
-  o -1 f0 o -2 f3
-  zoom 0.8
-  t 1000 r s4 -180 p3 p4 // Replie la face
-  t 1000 reverseInside s4 p6
 </template>
 
 <script type="module">
@@ -1164,25 +933,6 @@ class Segment {
         const pXf = s.p1.xf + t * (s.p2.xf - s.p1.xf);
         const pYf = s.p1.yf + t * (s.p2.yf - s.p1.yf);
         return new Point(pXf, pYf);
-    }
-
-    // Vérifie si un point p est sur le segment s (en 2D)
-    static isPointOnSegment(s, p, epsilon = 1e-6) {
-        // Vérifier si p est colinéaire avec s.p1 et s.p2
-        const dx = s.p2.xf - s.p1.xf;
-        const dy = s.p2.yf - s.p1.yf;
-        const lenSq = dx * dx + dy * dy;
-        if (lenSq === 0) return false; // Segment dégénéré
-
-        // Paramètre t pour la projection de p sur la ligne s.p1-s.p2
-        const t = ((p.xf - s.p1.xf) * dx + (p.yf - s.p1.yf) * dy) / lenSq;
-        if (t < -epsilon || t > 1 + epsilon) return false; // Hors du segment
-
-        // Vérifier la distance perpendiculaire
-        const closestX = s.p1.xf + t * dx;
-        const closestY = s.p1.yf + t * dy;
-        const dist = Math.hypot(p.xf - closestX, p.yf - closestY);
-        return dist < epsilon;
     }
 
     // Trouve le point le plus proche sur le segment (en 2D)
@@ -2039,181 +1789,6 @@ class Model {
         this.rotate(s, angle, this.points);
     }
 
-    // =============================================
-    // Reverse Inside Fold: pousse la pointe d'un pli entre les deux pans de
-    // papier qui se rejoignent au point central (ex: le cou d'une grue). tn
-    // est la progression absolue du pli (0 = départ, 1 = pli inversé) ;
-    // reverseFold() peut être rappelée à chaque frame d'une animation, comme
-    // zoom() ou fit(), avec un tn croissant.
-    // La géométrie du mouvement (point mobile, portillons, angle de balayage)
-    // est figée UNE SEULE FOIS par pli, dès le premier appel, et mémorisée
-    // sur le segment (recalculée si tn revient en arrière : un nouveau pli
-    // recommence). Elle ne peut PAS être recalculée depuis la position
-    // courante à chaque frame : la cible du point mobile et l'orientation de
-    // chaque portillon se définissent par rapport à sa position de DÉPART,
-    // pas une position déjà en mouvement. Seule l'application du mouvement
-    // est répétée à chaque appel, par petits incréments additifs autour d'un
-    // axe fixe (leur somme vaut exactement sweepAngle * tn, sans dérive).
-    // =============================================
-    reverseFold(segment, center, tn) {
-        const fail = (msg) => console.log(`${msg} for segment ${this.indexOf(segment)} and center ${this.indexOf(center)}`);
-        if (!segment || !center) return fail('Invalid segment or center');
-
-        let mobilePoint = null;
-        if (segment.p1 === center) mobilePoint = segment.p2;
-        else if (segment.p2 === center) mobilePoint = segment.p1;
-        if (!mobilePoint) return fail('Invalid mobile point');
-
-        let cache = segment._reverseFold;
-        if (!cache || cache.center !== center || tn < cache.lastTn) {
-            // Points qui bougent avec mobilePoint, sans déborder sur les
-            // autres pans accrochés à 'center' (ses autres voisins).
-            const excluded = new Set([center]);
-            for (const seg of this.searchSegmentsOnePoint(center)) {
-                const other = seg.p1 === center ? seg.p2 : seg.p1;
-                if (other !== mobilePoint) excluded.add(other);
-            }
-            const pointsToRotate = [];
-            const toVisit = [mobilePoint];
-            while (toVisit.length > 0) {
-                const current = toVisit.pop();
-                if (excluded.has(current)) continue;
-                excluded.add(current);
-                pointsToRotate.push(current);
-                for (const seg of this.searchSegmentsOnePoint(current)) {
-                    const other = seg.p1 === current ? seg.p2 : seg.p1;
-                    if (!excluded.has(other)) toVisit.push(other);
-                }
-            }
-            if (pointsToRotate.length === 0) return fail('No points to rotate');
-
-            // Une pliure intérieure a exactement 2 faces adjacentes ; le
-            // "portillon" de chacune est son autre voisin de 'center'. Chaque
-            // portillon garde sa PROPRE normale de face (jamais une normale
-            // partagée) : les 2 faces, empilées à plat par le pli précédent,
-            // ont un sens de parcours opposé, donc des normales opposées —
-            // ce qui écarte chaque portillon vers l'extérieur de SON pan,
-            // jamais vers l'autre.
-            const faces = this.searchFacesWithAB(segment.p1, segment.p2);
-            if (faces.length !== 2) return fail('Expected 2 faces adjacent to segment');
-            const gateOf = (face) => {
-                const pts = face.points;
-                const i = pts.indexOf(center);
-                const prev = pts[(i - 1 + pts.length) % pts.length];
-                return prev === mobilePoint ? pts[(i + 1) % pts.length] : prev;
-            };
-            const gate0 = gateOf(faces[0]), gate1 = gateOf(faces[1]);
-
-            // Normale locale de la feuille (les 2 faces sont coplanaires
-            // juste avant ce pli, donc l'une ou l'autre convient).
-            const normal = Model.normal(faces[0]);
-
-            // mobilePoint doit atterrir sur son symétrique par rapport à la
-            // droite (center, milieu des portillons).
-            const gx = (gate0.x + gate1.x) / 2, gy = (gate0.y + gate1.y) / 2, gz = (gate0.z + gate1.z) / 2;
-            let ax = gx - center.x, ay = gy - center.y, az = gz - center.z;
-            const axisLen = Math.hypot(ax, ay, az);
-            if (axisLen < 1e-9) return fail('Invalid axis');
-            ax /= axisLen; ay /= axisLen; az /= axisLen;
-
-            const v1x = mobilePoint.x - center.x, v1y = mobilePoint.y - center.y, v1z = mobilePoint.z - center.z;
-            const along = v1x * ax + v1y * ay + v1z * az;
-            const targetX = center.x + 2 * along * ax - v1x;
-            const targetY = center.y + 2 * along * ay - v1y;
-            const targetZ = center.z + 2 * along * az - v1z;
-
-            // Angle signé (autour de la normale locale) entre la position de
-            // départ de mobilePoint et sa cible.
-            const v2x = targetX - center.x, v2y = targetY - center.y, v2z = targetZ - center.z;
-            const dot = v1x * v2x + v1y * v2y + v1z * v2z;
-            const crossX = v1y * v2z - v1z * v2y, crossY = v1z * v2x - v1x * v2z, crossZ = v1x * v2y - v1y * v2x;
-            const sinPart = crossX * normal[0] + crossY * normal[1] + crossZ * normal[2];
-            const sweepAngle = Math.atan2(sinPart, dot) * 180 / Math.PI;
-
-            const axisSegment = new Segment(
-                new Point(center.xf, center.yf, center.x, center.y, center.z),
-                new Point(center.x + normal[0], center.y + normal[1], center.x + normal[0], center.y + normal[1], center.z + normal[2])
-            );
-
-            // Chaque portillon reste à distance fixe R de 'center' ET à
-            // distance fixe edgeLength de mobilePoint (un vrai bord de
-            // papier) : ces deux contraintes imposent l'angle d'écartement
-            // phi (cos phi = K/(R·mobileRadius), K = (R²+mobileRadius²-edgeLength²)/2).
-            // Ce calcul dégénère (portillon effondré à 90°) quand mobilePoint
-            // démarre perpendiculaire au portillon (plis symétriques) ;
-            // comme cette ouverture n'est qu'un dégagement visuel — pas une
-            // contrainte réelle du papier — on plafonne l'écart à une
-            // fraction modeste de R (maxGateOpenFraction).
-            const mobileRadius = Math.hypot(v1x, v1y, v1z);
-            const maxGateOpenFraction = 0.3;
-            // Tout ce qui suit est mesuré sur la géométrie de DÉPART (avant
-            // que mobilePoint ne bouge) : le recalculer plus tard depuis un
-            // mobilePoint en mouvement ferait varier normale et longueur
-            // d'arête à chaque frame.
-            const gateData = (p, face) => {
-                // Normale opposée à celle, sortante, de la face : les 2 pans
-                // empilés à plat ont un sens de parcours opposé, donc le
-                // recto de l'un fait face au verso de l'autre.
-                const faceNormal = Model.normal(face);
-                const gateNormal = [-faceNormal[0], -faceNormal[1], -faceNormal[2]];
-                const hx = p.x - center.x, hy = p.y - center.y, hz = p.z - center.z;
-                const R = Math.hypot(hx, hy, hz);
-                const alongN = hx * gateNormal[0] + hy * gateNormal[1] + hz * gateNormal[2];
-                let ix = hx - alongN * gateNormal[0], iy = hy - alongN * gateNormal[1], iz = hz - alongN * gateNormal[2];
-                const iLen = Math.hypot(ix, iy, iz) || 1;
-                ix /= iLen; iy /= iLen; iz /= iLen;
-                const edgeLength = Math.hypot(p.x - mobilePoint.x, p.y - mobilePoint.y, p.z - mobilePoint.z);
-                const k = (R * R + mobileRadius * mobileRadius - edgeLength * edgeLength) / 2;
-                const peakCosPhi = Math.max(-1, Math.min(1, k / (R * mobileRadius)));
-                const exactPeakZOff = R * Math.sqrt(Math.max(1 - peakCosPhi * peakCosPhi, 0));
-                const peakZOff = Math.min(exactPeakZOff, R * maxGateOpenFraction);
-                return {point: p, R, ix, iy, iz, gateNormal, peakZOff};
-            };
-
-            cache = {
-                center, pointsToRotate, axisSegment, sweepAngle, appliedAngle: 0, lastTn: 0,
-                gates: [gateData(gate0, faces[0]), gateData(gate1, faces[1])],
-            };
-            segment._reverseFold = cache;
-        }
-
-        // rotate() compose les rotations de façon additive autour d'un même
-        // axe fixe : ne tourner que de l'angle manquant depuis le dernier
-        // appel donne, au total, exactement sweepAngle * tn, sans dérive.
-        const targetAngle = cache.sweepAngle * tn;
-        this.rotate(cache.axisSegment, targetAngle - cache.appliedAngle, cache.pointsToRotate);
-        cache.appliedAngle = targetAngle;
-        cache.lastTn = tn;
-
-        // Chaque portillon s'écarte dans son plan de départ selon une bosse
-        // sinusoïdale : 0 en tn=0 et tn=1, maximale (peakZOff) en tn=0.5.
-        const h = Math.sin(Math.PI * tn);
-        cache.gates.forEach(({point: p, R, ix, iy, iz, gateNormal, peakZOff}) => {
-            const zOff = peakZOff * h;
-            const inPlaneLen = Math.sqrt(Math.max(R * R - zOff * zOff, 0));
-            p.x = center.x + ix * inPlaneLen + gateNormal[0] * zOff;
-            p.y = center.y + iy * inPlaneLen + gateNormal[1] * zOff;
-            p.z = center.z + iz * inPlaneLen + gateNormal[2] * zOff;
-        });
-
-        // Sélectionne les segments dont la longueur 3d s'écarte de la
-        // longueur 2d, pour repérer visuellement un pli devenu invalide.
-        // checkSegments() ne fait qu'ajouter des sélections, jamais en
-        // retirer (pour ne pas désarmer l'axe de pli choisi par clic, voir
-        // armAxis() dans Helper.js) : on repart donc de zéro nous-mêmes à
-        // chaque frame, pour que seuls les segments encore invalides
-        // ressortent sélectionnés.
-        this.segments.forEach((s) => { s.select = false; });
-        // this.checkSegments();
-
-        // Inverser l'assignment de la pliure (valley ↔ mountain) une fois arrivé
-        if (tn >= 1) {
-            if (segment.assignment === 'V') segment.assignment = 'M';
-            else if (segment.assignment === 'M') segment.assignment = 'V';
-            else segment.assignment = 'U';
-        }
-    }
-
     // Zoom model. Scales 3D distances by `scale`, so the 2d/3d comparison in
     // adjust()/checkSegments() (which divides length3d by this.scale) must be
     // kept in sync, the same way scaleModel() does.
@@ -2985,11 +2560,7 @@ class Command {
             this.tokenTodo = [];
             this.iToken = 0;
             this.instructions = [];
-            // A fresh model replaces whatever script was running before, so any
-            // leftover pause (e.g. a prior template's 'pause' line) or in-flight
-            // animation no longer applies — without this, the new script sits
-            // queued forever behind a stale State.pause/State.anim (see stepMode
-            // below, which still re-pauses immediately if that mode is armed).
+            // A fresh model replaces whatever script was running before.
             this.model.state = State.run;
         } else if (tokens[0] === 'u' || tokens[0] === 'undo') {
             // Drop the snapshot of the live model; runUndo restores the previous one.
@@ -3416,14 +2987,6 @@ on('bisector2dPoints', (cmd) => take(cmd, 'p', 3, 'bisector2dPoints needs 3 poin
 on('bisector3dPoints', (cmd) => take(cmd, 'p', 3, 'bisector3dPoints needs 3 points', (a, b, c) => cmd.model.bisector3dPoints(a, b, c)));
 on('split splitSegment2d', splitSegment);
 
-// Reverse Inside Fold: inverse une pliure en poussant sa pointe entre les deux
-// pans de papier qui se rejoignent au point central (ex: reverseInside s0 p1).
-on('reverseInside', (cmd) => {
-    const s = cmd.token('s');
-    const p = cmd.token('p');
-    if (s && p) cmd.model.reverseFold(s, p, cmd.tni);
-});
-
 on('r rotate', rotate);
 on('m move', move);
 on('mop moveOnPoint', (cmd) => {const pts = cmd.tokens('p');cmd.model.moveOnPoint(pts[0], pts);});
@@ -3557,37 +3120,33 @@ class CommandArea {
 
 const CLICK_PX_MOUSE = 12;
 const CLICK_PX_TOUCH = 24;
+// A fingertip covers far more pixels than a cursor: widen the pick radii accordingly
+const PICK_FACTOR_TOUCH = 2;
 
-// Gesture vocabulary (see README):
-// - Click a point/segment/face toggles its selection (whole coincident stack);
-//   holding Ctrl/Cmd targets only the exact one under the cursor.
-// - Clicking a segment arms it as the fold axis (only one armed at a time).
-// - Dragging point<->point, point<->segment or segment<->segment scores a new
-//   crease. The plain drag runs a line directly through what was dragged; holding
-//   Ctrl/Cmd instead makes the two dragged things coincide once folded.
-//   Drag direction (screen up/down) sets the crease to mountain/valley.
-// - Once an axis is armed, dragging a face that borders it folds that face (and
-//   any other already-selected faces) around the axis — the axis stays armed
-//   afterwards, so folding the other side along the same crease is a second plain drag.
-// - Dragging on a face with no axis armed, crossing existing creases, splits
-//   them at the crossing points (to create landmark points to crease between).
 class Helper {
     constructor(model, command, view3d, view2d) {
         this.model = model;
         this.command = command;
         this.view3d = view3d;
         this.view2d = view2d;
+        this.currentCanvas = undefined;
+        this.orbiting = false;
         this.touchTime = 0;
         this.lastClickPoints = [];
         this.pointerType = 'mouse';
-        this.precise = false;
         // Mouse coordinates, first and current
         this.firstX = this.firstY = this.currentX = this.currentY = undefined;
+        // Correctif pour les gestes tactiles
+        let lastTouchDistance = 0;
 
         // To test with Deno, view3d (and its overlay) may be null
         const overlay = view3d?.overlay;
         if (overlay) {
-            overlay.addEventListener('pointerdown', (event) => this.down3d(event));
+            overlay.addEventListener('pointerdown', (event) => {
+                if (event.button === 1) event.preventDefault(); // no autoscroll
+                try { overlay.setPointerCapture(event.pointerId); } catch { /* ignore */ }
+                this.down3d(event);
+            });
             overlay.addEventListener('pointermove', (event) => this.move3d(event));
             overlay.addEventListener('pointerup', (event) => this.up3d(event));
             overlay.addEventListener('pointercancel', (event) => this.out(event));
@@ -3595,8 +3154,32 @@ class Helper {
             overlay.addEventListener('contextmenu', (event) => {event.preventDefault();});
             // Keyboard
             document.addEventListener('keydown', (event) => this.keydown(event));
+            // Tactile
+            document.addEventListener('touchstart', function(e) {
+                if (e.touches && e.touches.length >= 2) {
+                    const t0 = e.touches[0];
+                    const t1 = e.touches[1];
+                    const dx = t0.clientX - t1.clientX;
+                    const dy = t0.clientY - t1.clientY;
+                    lastTouchDistance = Math.sqrt(dx*dx + dy*dy);
+                }
+            });
+            // Add e.scale for View3d
+            document.addEventListener('touchmove', function(e) {
+                if (e.touches && e.touches.length >= 2 && !e.scale) {
+                    const t0 = e.touches[0];
+                    const t1 = e.touches[1];
+                    const dx = t0.clientX - t1.clientX;
+                    const dy = t0.clientY - t1.clientY;
+                    const currentDist = Math.sqrt(dx*dx + dy*dy);
+                    if (lastTouchDistance > 0) {
+                        e.scale = currentDist / lastTouchDistance;
+                        lastTouchDistance = currentDist;
+                    }
+                }
+            });
         }
-        // Flat crease-pattern view — pointer* covers mouse and touch
+        // Flat crease-pattern view — covers mouse and touch
         const canvas2d = view2d?.canvas2d;
         if (canvas2d) {
             canvas2d.addEventListener('pointerdown', (event) => {
@@ -3610,20 +3193,30 @@ class Helper {
         this.out();
     }
 
+    // Pointer events report the device kind: 'mouse', 'pen' or 'touch'.
+    // Recorded on each pointerdown, it classifies the whole gesture that follows.
+    // A stylus is as precise as a cursor, only a finger is coarse.
+    setPointerType(event) {
+        this.pointerType = event?.pointerType || 'mouse';
+    }
+
+    coarsePointer() {
+        return this.pointerType === 'touch';
+    }
+
     clickThreshold() {
-        return this.pointerType === 'touch' ? CLICK_PX_TOUCH : CLICK_PX_MOUSE;
+        return this.coarsePointer() ? CLICK_PX_TOUCH : CLICK_PX_MOUSE;
+    }
+
+    // Multiplies the pick radii so a finger tap still catches points and segments
+    pickFactor() {
+        return this.coarsePointer() ? PICK_FACTOR_TOUCH : 1;
     }
 
     isClick() {
         const dx = (this.currentX ?? 0) - (this.firstX ?? 0);
         const dy = (this.currentY ?? 0) - (this.firstY ?? 0);
         return Math.hypot(dx, dy) < this.clickThreshold();
-    }
-
-    // Ctrl/Cmd held: targets a single stacked item, or the coincidence-construction
-    // variant of a crease, instead of the default whole-stack / through-line behaviour.
-    isPrecise(event) {
-        return !!(event && (event.ctrlKey || event.metaKey));
     }
 
     keydown(event) {
@@ -3654,6 +3247,7 @@ class Helper {
         this.label = undefined;
         this.currentSegment = undefined;
         this.moving = false;
+        this.orbiting = false;
     }
 
     clearSelection() {
@@ -3826,17 +3420,20 @@ class Helper {
         return segs;
     }
 
-    // Signed rotation angle (degrees) from ref point to cursor, around segment.
+    // Signed rotation angle (degrees): angular sweep of the cursor around the
+    // segment's midpoint (the hinge), relative to the reference point (the
+    // dragged face's centroid at rest). Turning the cursor around the hinge
+    // like a dial directly drives the fold angle by the same amount, instead
+    // of trying to infer it from an on-screen distance ratio.
     // Uses canvasPoint() so 2d (xf,-yf) and 3d (xCanvas,yCanvas) stay consistent.
     rotationLabel(s, refX, refY, x, y) {
         const p1 = this.canvasPoint(s.p1), p2 = this.canvasPoint(s.p2);
-        const p1Proj = [p1.xf, p1.yf], p2Proj = [p2.xf, p2.yf];
-        const distToFirst = (refX - p1Proj[0]) * (p2Proj[1] - p1Proj[1]) - (refY - p1Proj[1]) * (p2Proj[0] - p1Proj[0]);
-        const distToCurrent = (x - p1Proj[0]) * (p2Proj[1] - p1Proj[1]) - (y - p1Proj[1]) * (p2Proj[0] - p1Proj[0]);
-        if (Math.abs(distToFirst) < 1e-6) return 0;
-        let ratio = Math.abs(distToCurrent / distToFirst);
-        ratio = Math.round(ratio * 100) / 100;
-        let angle = (ratio - 1) * 180 * -Math.sign(distToFirst);
+        const pivotX = (p1.xf + p2.xf) / 2, pivotY = (p1.yf + p2.yf) / 2;
+        if (Math.hypot(refX - pivotX, refY - pivotY) < 1e-6) return 0;
+        const refAngle = Math.atan2(refY - pivotY, refX - pivotX);
+        const curAngle = Math.atan2(y - pivotY, x - pivotX);
+        let angle = (curAngle - refAngle) * 180 / Math.PI;
+        angle = ((angle + 180) % 360 + 360) % 360 - 180; // normalize to (-180, 180]
         angle = Math.round(angle / 10) * 10;
         return Math.abs(angle) < 10 ? 0 : angle;
     }
@@ -3861,8 +3458,7 @@ class Helper {
         }
     }
 
-    up(points, segments, faces, precise = false) {
-        this.precise = precise;
+    up(points, segments, faces) {
         this.upPoints = points.length ? points : [];
         this.upPoint = this.upPoints[0];
         this.upSegments = !this.upPoint && segments.length ? segments : [];
@@ -3902,11 +3498,7 @@ class Helper {
             }
             this.touchTime = Date.now();
             this.lastClickPoints = [...this.downPoints];
-            if (this.precise) {
-                this.downPoint.select = !this.downPoint.select;
-            } else {
-                this.togglePointStack(this.downPoints);
-            }
+            this.togglePointStack(this.downPoints);
             return;
         }
 
@@ -3917,7 +3509,7 @@ class Helper {
         if (this.upPoint) {
             this.creaseTwoPoints(this.downPoint, this.upPoint);
         } else if (this.upSegment) {
-            this.creasePointSegment(this.downPoint, this.upSegment);
+            this.creaseFromPointToSegment(this.downPoint, this.upSegment);
         }
     }
 
@@ -3972,23 +3564,13 @@ class Helper {
             return;
         }
 
-        // Si on a un segment sélectionné ET qu'on clique sur un point SUR ce segment
-        if (this.downSegment && this.upPoint) {
-            // Vérifier si le point est sur le segment
-            if (Segment.isPointOnSegment(this.downSegment, this.upPoint)) {
-                // Déclencher le Reverse Fold avec 180°
-                this.command.command(`reverseInside ${this.id(this.downSegment)} ${this.id(this.upPoint)}`);
-                return;
-            }
-        }
-
         if (this.model.faces.some(f => f.select)) {
             return;
         }
         if (this.upSegment) {
             this.creaseTwoSegments(this.downSegment, this.upSegment);
         } else if (this.upPoint) {
-            this.creasePointSegment(this.upPoint, this.downSegment);
+            this.creaseFromSegmentToPoint(this.downSegment, this.upPoint);
         }
     }
 
@@ -4001,16 +3583,12 @@ class Helper {
     }
 
     fromFaceClick() {
-        if (this.precise) {
-            this.downFace.select = !this.downFace.select;
-        } else {
-            const samePile = this.downFace && this.upFaces.includes(this.downFace);
-            if (samePile) {
-                this.toggleFaceStack(this.upFaces.length ? this.upFaces : this.downFaces);
-            } else if (this.upFace) {
-                // Different face: select Up front only; keep points/segments
-                this.upFace.select = true;
-            }
+        const samePile = this.downFace && this.upFaces.includes(this.downFace);
+        if (samePile) {
+            this.toggleFaceStack(this.upFaces.length ? this.upFaces : this.downFaces);
+        } else if (this.upFace) {
+            // Different face: select Up front only; keep points/segments
+            this.upFace.select = true;
         }
         const ids = this.model.faces.filter(f => f.select).map(f => `${this.id(f)}(${f.offset})`);
         if (ids.length) {
@@ -4138,12 +3716,6 @@ class Helper {
         return crossings.length > 0;
     }
 
-    sendCmd(base, ...objs) {
-        const suffix = this.currentCanvas === '2d' ? '2d' : '3d';
-        const args = objs.map(o => typeof o === 'string' ? o : this.id(o));
-        this.command.command(`${base}${suffix} ${args.join(' ')}`);
-    }
-
     // command.command() only enqueues — the model applies it on the next
     // animation frame. A crease command is never animated ('t ...'), so it is
     // always fully applied by exactly one command.anim() call; running that
@@ -4162,25 +3734,42 @@ class Helper {
         }
     }
 
-    // Plain: straight crease through both points. Ctrl/Cmd: the crease that
-    // brings one point onto the other once folded. Just marks the crease —
+    // Straight crease through both points ('by'). Just marks the crease —
     // mountain/valley is only meaningful once actually folded, so the new
     // segment is left unassigned ('U') regardless of drag direction.
+    // 'by' cuts along the line through a and b: when they already share a
+    // segment that line is that very segment, so 'by' would split nothing —
+    // fall back to 'c' (cross), the coincidence-fold that brings a onto b.
     creaseTwoPoints(a, b) {
-        this.sendCmd(this.precise ? 'c' : 'by', a, b);
+        const across = this.model.getSegment(a, b);
+        if (this.currentCanvas === '2d') {
+            if (across) this.command.command(`c2d ${this.id(a)} ${this.id(b)}`);
+            else this.command.command(`by2d ${this.id(a)} ${this.id(b)}`);
+        } else {
+            if (across) this.command.command(`c3d ${this.id(a)} ${this.id(b)}`);
+            else this.command.command(`by3d ${this.id(a)} ${this.id(b)}`);
+        }
         this.runQueuedNow();
     }
 
-    // Plain: crease through the point, perpendicular to the segment. Ctrl/Cmd:
-    // the crease that brings the segment's line onto the point once folded.
-    creasePointSegment(point, segment) {
-        this.sendCmd(this.precise ? 'parallel' : 'p', segment, point);
+    // Drag starting on the point: the crease through the point, perpendicular to the segment.
+    creaseFromPointToSegment(point, segment) {
+        if (this.currentCanvas === '2d') this.command.command(`p2d ${this.id(segment)} ${this.id(point)}`);
+        else this.command.command(`p3d ${this.id(segment)} ${this.id(point)}`);
+        this.runQueuedNow();
+    }
+
+    // Drag starting on the segment: the crease that brings the segment's line onto the point once folded.
+    creaseFromSegmentToPoint(segment, point) {
+        if (this.currentCanvas === '2d') this.command.command(`parallel2d ${this.id(segment)} ${this.id(point)}`);
+        else this.command.command(`parallel3d ${this.id(segment)} ${this.id(point)}`);
         this.runQueuedNow();
     }
 
     // The only sensible crease between two segments: their bisector.
     creaseTwoSegments(a, b) {
-        this.sendCmd('b', a, b);
+        if (this.currentCanvas === '2d') this.command.command(`b2d ${this.id(a)} ${this.id(b)}`);
+        else this.command.command(`b3d ${this.id(a)} ${this.id(b)}`);
         this.runQueuedNow();
     }
 
@@ -4222,9 +3811,9 @@ class Helper {
         this.command.command(`t 1000 r ${this.id(axis)} ${angle} ${pts.join(' ')}${adjust}${faceComment}`);
     }
 
-    // Canvas 2d (flat crease pattern)
+    // Canvas 2d (flat crease pattern). Overridable per-instance so tests can
+    // inject already-resolved {xf, yf} without a real DOM element behind view2d.
     event2d(event) {
-        if (!(event instanceof Event)) return event; // Used for test
         const rect = this.view2d.canvas2d.getBoundingClientRect();
         const canvasX = event.clientX - rect.left;
         const canvasY = event.clientY - rect.top;
@@ -4238,8 +3827,9 @@ class Helper {
     // Points, then segments, then faces near xf, yf
     search2d(xf, yf) {
         const scale = this.view2d.scale || 1;
-        const points = this.model.points.filter(p => Math.abs(p.xf - xf) + Math.abs(p.yf - yf) < 10 / scale);
-        const segments = this.model.segments.filter(s => Segment.distance2d(s.p1.xf, s.p1.yf, s.p2.xf, s.p2.yf, xf, yf) < 6 / scale);
+        const pick = this.pickFactor();
+        const points = this.model.points.filter(p => Math.abs(p.xf - xf) + Math.abs(p.yf - yf) < pick * 10 / scale);
+        const segments = this.model.segments.filter(s => Segment.distance2d(s.p1.xf, s.p1.yf, s.p2.xf, s.p2.yf, xf, yf) < pick * 6 / scale);
         const faces = this.model.faces.filter(f => Face.contains2d(f, xf, yf));
         return {points, segments, faces};
     }
@@ -4247,6 +3837,7 @@ class Helper {
     // Down on flat 2d
     down2d(event) {
         this.currentCanvas = '2d';
+        this.setPointerType(event);
         const {xf, yf} = this.event2d(event);
         const {points, segments, faces} = this.search2d(xf, yf);
         this.down(points, segments, faces, xf, -yf); // Note inverse y coordinate (drawing space)
@@ -4262,12 +3853,12 @@ class Helper {
     up2d(event) {
         const {xf, yf} = this.event2d(event);
         const {points, segments, faces} = this.search2d(xf, yf);
-        this.up(points, segments, faces, this.isPrecise(event));
+        this.up(points, segments, faces);
     }
 
-    // Canvas 3d
+    // Canvas 3d. Overridable per-instance so tests can inject already-resolved
+    // {xCanvas, yCanvas} without a real DOM element behind view3d.
     eventCanvas3d(event) {
-        if (!(event instanceof Event)) return event; // Used for test
         const rect = this.view3d.overlay.getBoundingClientRect();
         return {
             xCanvas: event.clientX - rect.left,
@@ -4292,10 +3883,11 @@ class Helper {
     }
 
     search3d(xCanvas, yCanvas, contextFace = undefined) {
+        const pick = this.pickFactor();
         // Points near xCanvas, yCanvas
-        const points = this.model.points.filter(p => Math.abs(p.xCanvas - xCanvas) + Math.abs(p.yCanvas - yCanvas) < 10);
+        const points = this.model.points.filter(p => Math.abs(p.xCanvas - xCanvas) + Math.abs(p.yCanvas - yCanvas) < pick * 10);
         // Segments near xCanvas, yCanvas
-        const segments = this.model.segments.filter(s => Segment.distance2d(s.p1.xCanvas, s.p1.yCanvas, s.p2.xCanvas, s.p2.yCanvas, xCanvas, yCanvas) < 6);
+        const segments = this.model.segments.filter(s => Segment.distance2d(s.p1.xCanvas, s.p1.yCanvas, s.p2.xCanvas, s.p2.yCanvas, xCanvas, yCanvas) < pick * 6);
         // Faces under cursor: depth-sorted; when contextFace set, adjacent faces only
         const faces = this.pickFaces3d(xCanvas, yCanvas, contextFace);
         return {points, segments, faces};
@@ -4303,8 +3895,10 @@ class Helper {
     // Down on 3d overlay
     down3d(event) {
         this.currentCanvas = '3d';
+        this.setPointerType(event);
         const {xCanvas, yCanvas} = this.eventCanvas3d(event);
         const {points, segments, faces} = this.search3d(xCanvas, yCanvas);
+        this.orbiting = event.button === 1 || event.shiftKey || (points.length === 0 && segments.length === 0 && faces.length === 0);
         this.down(points, segments, faces, xCanvas, yCanvas);
     }
 
@@ -4315,11 +3909,10 @@ class Helper {
         const contextFace = this.downFace || undefined;
         const {points, segments, faces} = this.search3d(xCanvas, yCanvas, contextFace);
         // Handle 3d rotation
-        if (points.length === 0 && segments.length === 0 && faces.length === 0
-            && event.buttons === 1
-            && !this.downPoint && !this.downSegment && !this.downFace) {
+        if (this.orbiting && event.buttons > 0) {
             // Rotation
-            const factor = (600 / event.target.height) ;
+            const target = event.target || this.view3d.overlay;
+            const factor = 600 / (target.height || 600);
             const dx = factor * (xCanvas - this.currentX);
             const dy = factor * (yCanvas - this.currentY);
             this.view3d.angleX += dy;
@@ -4339,7 +3932,7 @@ class Helper {
     up3d(event) {
         const {xCanvas, yCanvas} = this.eventCanvas3d(event);
         const {points, segments, faces} = this.search3d(xCanvas, yCanvas);
-        this.up(points, segments, faces, this.isPrecise(event));
+        this.up(points, segments, faces);
         if (points.length === 0 && segments.length === 0 && faces.length === 0) {
             this.doubleClick();
         }
@@ -5336,7 +4929,7 @@ class Label {
 
 
     // Chargement du template "test" au lancement
-    load('demo');
+    load('test');
 
   }
 
