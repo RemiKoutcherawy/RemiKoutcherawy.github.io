@@ -28,17 +28,19 @@
     body.command-area-open #commandAreaPanel{display:flex}
     #commandAreaPanel label{font:14px sans-serif;margin-bottom:4px}
     #commandArea{flex:1;width:100%;font:14px monospace;resize:none}
-    #burger,#nav,#undoBtn,#runBtn,#stepBtn{position:absolute;left:8px;z-index:10;background:#f6f8fa;border:1px solid black;border-radius:6px}
+    #burger,#nav,#undoBtn,#redoBtn,#runBtn{position:absolute;left:8px;z-index:10;background:#f6f8fa;border:1px solid black;border-radius:6px}
     #burger{top:8px;padding:8px;line-height:0;cursor:pointer}
     #burger:hover{background:#eef1f4}
     #undoBtn{top:8px;left:54px;padding:8px;line-height:0;cursor:pointer}
     #undoBtn:hover{background:#eef1f4}
-    #runBtn{top:8px;left:100px;padding:8px;line-height:0;cursor:pointer}
+    #redoBtn{top:8px;left:100px;padding:8px;line-height:0;cursor:pointer}
+    #redoBtn:hover{background:#eef1f4}
+    #runBtn{top:8px;left:146px;padding:8px;line-height:0;cursor:pointer}
     #runBtn:hover{background:#eef1f4}
-    #stepBtn{top:8px;left:146px;padding:8px;line-height:0;cursor:pointer}
-    #stepBtn:hover{background:#eef1f4}
-    /* noinspection CssUnusedSymbol -- toggled via classList.toggle('active', ...) */
-    #stepBtn.active,#runBtn.active{background:#e6a817}
+    #runBtn[aria-pressed="true"] .play,#runBtn[aria-pressed="false"] .pause{display:none}
+    #timelineBar{position:absolute;top:8px;left:192px;z-index:10;display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f6f8fa;border:1px solid black;border-radius:6px}
+    #timeline{width:clamp(80px,calc(100vw - 300px),320px)}
+    #timelineLabel{font:14px sans-serif;min-width:3.5em}
     #burger span{display:block;width:22px;height:2px;margin:4px 0;background:#1f2328;transition:.15s}
     #burger[aria-expanded="true"] span:first-child{transform:translateY(6px) rotate(45deg)}
     #burger[aria-expanded="true"] span:nth-child(2){opacity:0}
@@ -58,7 +60,7 @@
   </style>
 </head>
 
-<body class="view2d-open command-area-open">
+<!--<body class="view2d-open command-area-open">-->
 <!--<body>-->
 <div>
   <canvas id="canvas2d"></canvas>
@@ -75,12 +77,17 @@
 <button id="undoBtn" data-load="undo" aria-label="Undo">
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1f2328" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 1 1 0 11H11"/></svg>
 </button>
-<button id="runBtn" data-load="run" aria-label="Run" title="Run: resumes normal auto-play after Step has paused the script.">
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1f2328" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l14 8-14 8z"/></svg>
+<button id="redoBtn" data-load="redo" aria-label="Redo">
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1f2328" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 1 0 0 11H13"/></svg>
 </button>
-<button id="stepBtn" aria-label="Step" title="Step: pauses the script, then advances one line per click. Click Run to resume.">
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1f2328" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4v16l10-8z"/><line x1="18" y1="4" x2="18" y2="20"/></svg>
+<button id="runBtn" aria-label="Lecture / pause" aria-pressed="false">
+  <svg class="play" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1f2328" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l14 8-14 8z"/></svg>
+  <svg class="pause" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1f2328" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="5" x2="8" y2="19"/><line x1="16" y1="5" x2="16" y2="19"/></svg>
 </button>
+<div id="timelineBar">
+  <input type="range" id="timeline" min="0" max="0" value="0" aria-label="Étapes">
+  <span id="timelineLabel">0/0</span>
+</div>
 <nav id="nav">
   <details name="nav-menu">
     <summary>Plis de base<span class="chev">›</span></summary>
@@ -206,7 +213,7 @@ t 100 fit
 <template id="exportFold">fold</template>
 <template id="exportDiagrams">diagrams</template>
 <template id="undo">undo</template>
-<template id="run">run</template>
+<template id="redo">redo</template>
 <template id="labels">labels</template>
 <template id="textures">textures</template>
 
@@ -216,7 +223,17 @@ t 100 fit
   d 200 200
   by2d p0 p2 by2d p1 p3
   c2d p0 p1 c2d p1 p2
-  t 1000 r s5 -180 p8 r s6 180 p7 r s13 -180 p5 a p2 p3
+  t 1000 r s5 -180 p8 r s6 180 p7 r s13 -180 p5 p2 p3
+  t 500 fit
+  check
+  // Square base
+  d 200 200
+  by2d p0 p2 by2d p1 p3
+  c2d p0 p1 c2d p1 p2
+  t 1000  r s15 -180 p3 r s11 -180 p1 r s7 180 p2 p5 p7
+  t 500 fit
+  check
+<!--  t 1000 r s5 -90 p8 r s6 90 p7 r s13 -90 p5 p2 p3-->
 </template>
 
 <template id="plane">
@@ -678,11 +695,6 @@ class Point {
         if (length === 0) return {xf: 0, yf: 0};
         return {xf: a.xf / length, yf: a.yf / length};
     }
-
-    // Alias for backward compatibility (British English spelling)
-    static normalise(a) {
-        return Point.normalize(a);
-    }
 }
 
 
@@ -1106,17 +1118,23 @@ class Plane {
 
 const State = {run: 0, anim: 1, undo: 2, pause: 3,};
 
+// Newell's accumulated (unnormalized) normal vector; {0,0,0} when < 3 points
+function newellNormal(points) {
+    let nx = 0, ny = 0, nz = 0;
+    if (points && points.length >= 3) {
+        for (let i = 0; i < points.length; i++) {
+            const a = points[i], b = points[(i + 1) % points.length];
+            nx += (a.y - b.y) * (a.z + b.z);
+            ny += (a.z - b.z) * (a.x + b.x);
+            nz += (a.x - b.x) * (a.y + b.y);
+        }
+    }
+    return {nx, ny, nz};
+}
+
 // Newell: magnitude of the accumulated normal (0 if degenerated or < 3 points)
 function polygonArea3d(points) {
-    if (!points || points.length < 3) return 0;
-    let nx = 0, ny = 0, nz = 0;
-    for (let i = 0; i < points.length; i++) {
-        const a = points[i], b = points[(i + 1) % points.length];
-        nx += (a.y - b.y) * (a.z + b.z);
-        ny += (a.z - b.z) * (a.x + b.x);
-        nz += (a.x - b.x) * (a.y + b.y);
-    }
-    // Newell's accumulated normal has magnitude 2x the true polygon area
+    const {nx, ny, nz} = newellNormal(points);
     return Math.hypot(nx, ny, nz) / 2;
 }
 
@@ -1603,8 +1621,8 @@ class Model {
     // without the crossing point being an actual model vertex).
     bisector2dPoints(a, b, c) {
         // Two unit vectors from b towards a and c
-        const v1n = Point.normalise({xf: a.xf - b.xf, yf: a.yf - b.yf});
-        const v2n = Point.normalise({xf: c.xf - b.xf, yf: c.yf - b.yf});
+        const v1n = Point.normalize({xf: a.xf - b.xf, yf: a.yf - b.yf});
+        const v2n = Point.normalize({xf: c.xf - b.xf, yf: c.yf - b.yf});
         // Bisector direction from b
         const dir = {xf: v1n.xf + v2n.xf, yf: v1n.yf + v2n.yf};
         const target = {xf: b.xf + dir.xf, yf: b.yf + dir.yf};
@@ -1647,108 +1665,37 @@ class Model {
     adjust(point) {
         // Take all segments containing point p
         const segments = this.searchSegmentsOnePoint(point);
-        const neighbors = segments.map((s) => ({
-            other: s.p1 === point ? s.p2 : s.p1,
-            lg2d: Segment.length2d(s), // Should not change
-        }));
-        // Matching each neighbor's 2D length pins `point` onto a sphere around
-        // it. Two spheres around two *distinct* centers narrow that down to a
-        // circle; a third, non-coincident one narrows it further to (up to) a
-        // point — which is what the average below converges to. But folding
-        // routinely stacks distinct neighbors onto the very same spot (layers
-        // coming together): then there are really only two distinct spheres
-        // however many segments point at them, and no amount of iterating can
-        // narrow a circle down further. Solve that case directly instead.
-        const clusters = Model.clusterByPosition(neighbors);
-        if (clusters.length === 2) return this.adjustOnCircle(point, clusters, neighbors.length > 2);
         let max = 0.1;
         // Iterate while the length difference between 2d and 3d is > 1e-3
         for (let i = 0; max > 0.001 && i < 200; i++) {
             max = 0;
             // Pm is the medium point
             const pm = new Vector3(0, 0, 0);
-            for (const {other, lg2d} of neighbors) {
-                const lg3d = Vector3.distance(point, other) / this.scale;
+            for (const s of segments) {
+                const lg3d = Segment.length3d(s) / this.scale;
                 if (lg3d === 0) continue;
+                const lg2d = Segment.length2d(s); // Should not change
                 const d = Math.abs(lg2d - lg3d);
                 if (d > max) max = d;
                 // Move B = A + AB * r with r = l2d / l3d
                 // AB * r is based on length 3d to match length 2d
                 const r = lg2d / lg3d;
+                let other = null;
+                if (s.p2 === point) other = s.p1;
+                else if (s.p1 === point) other = s.p2;
+                if (!other) continue;
                 pm.x += other.x + (point.x - other.x) * r;
                 pm.y += other.y + (point.y - other.y) * r;
                 pm.z += other.z + (point.z - other.z) * r;
             }
             // Set Point with an average position taking all segments
-            if (neighbors.length > 0) {
-                point.x = pm.x / neighbors.length;
-                point.y = pm.y / neighbors.length;
-                point.z = pm.z / neighbors.length;
+            if (segments.length > 0) {
+                point.x = pm.x / segments.length;
+                point.y = pm.y / segments.length;
+                point.z = pm.z / segments.length;
             }
         }
         return max;
-    }
-
-    // Group {other, lg2d} neighbors whose `other` point is (nearly) at the
-    // same current 3D position — paper folded them together. Only the first
-    // one found in each such group can pin `point` down any further; later
-    // ones would just repeat the same sphere.
-    static clusterByPosition(neighbors, eps = 0.5) {
-        const clusters = [];
-        for (const n of neighbors) {
-            if (!clusters.some((c) => Vector3.distance(c.other, n.other) < eps)) clusters.push(n);
-        }
-        return clusters;
-    }
-
-    // Exactly two independent references: place `point` on the circle where
-    // their two spheres meet, at whichever point of that circle is closest to
-    // where `point` currently sits — the same "stay near your current path"
-    // rule the average in adjust() follows one small step at a time, just
-    // solved directly since no amount of iterating that average can narrow a
-    // circle down to a point on its own.
-    adjustOnCircle(point, clusters, snap = false) {
-        const [c1, c2] = clusters;
-        const A = c1.other, B = c2.other;
-        const rA = c1.lg2d * this.scale, rB = c2.lg2d * this.scale;
-        const d = Vector3.distance(A, B);
-        if (d === 0) return 0.1; // both spheres share a center: leave point be
-        const u = Vector3.scale(Vector3.sub(B, A), 1 / d);
-        // Distance from A to the circle's center along axis AB, then the
-        // circle's own radius (law of cosines); clamp for near-misses caused
-        // by substep floating-point drift rather than a real inconsistency.
-        const a = Math.max(0, Math.min(d, (d * d + rA * rA - rB * rB) / (2 * d)));
-        const h = Math.sqrt(Math.max(rA * rA - a * a, 0));
-        const center = Vector3.add(A, Vector3.scale(u, a));
-        const toPoint = Vector3.sub(point, center);
-        let perp = Vector3.sub(toPoint, Vector3.scale(u, Vector3.dot(toPoint, u)));
-        let perpLen = Vector3.length3d(perp);
-        if (perpLen < 1e-9) {
-            // point sits exactly on the axis: any direction on the circle is as good
-            const arbitrary = Math.abs(u.x) < 0.9 ? {x: 1, y: 0, z: 0} : {x: 0, y: 1, z: 0};
-            perp = Vector3.sub(arbitrary, Vector3.scale(u, Vector3.dot(arbitrary, u)));
-            perpLen = Vector3.length3d(perp);
-        }
-        const target = Vector3.add(center, Vector3.scale(perp, h / perpLen));
-        // Stacked neighbors mean a flat-ish fold, where the circle's free angle
-        // is normally settled by another layer: if some other point already
-        // sits on both spheres, land exactly on it rather than merely near it.
-        // Not for two plain neighbors (`snap` false): a mirror-image point on
-        // both spheres would then be an unrelated match.
-        const onCircle = (q) => q !== point && q !== A && q !== B
-            && Math.abs(Vector3.distance(q, A) / this.scale - c1.lg2d) < 0.05
-            && Math.abs(Vector3.distance(q, B) / this.scale - c2.lg2d) < 0.05;
-        const snapTo = snap ? this.points
-            .filter(onCircle)
-            .sort((q, r) => Vector3.distance(q, target) - Vector3.distance(r, target))[0] : null;
-        const dest = snapTo ?? target;
-        point.x = dest.x;
-        point.y = dest.y;
-        point.z = dest.z;
-        return Math.max(
-            Math.abs(Vector3.distance(point, A) / this.scale - c1.lg2d),
-            Math.abs(Vector3.distance(point, B) / this.scale - c2.lg2d),
-        );
     }
 
     // Adjust list of points 3d
@@ -1994,15 +1941,7 @@ class Model {
 
     // Compute 3D unit normal vector [nx, ny, nz]
     static normal(face) {
-        const pts = face?.points || face || [];
-        if (pts.length < 3) return [0, 0, 1];
-        let nx = 0, ny = 0, nz = 0;
-        for (let i = 0; i < pts.length; i++) {
-            const a = pts[i], b = pts[(i + 1) % pts.length];
-            nx += (a.y - b.y) * (a.z + b.z);
-            ny += (a.z - b.z) * (a.x + b.x);
-            nz += (a.x - b.x) * (a.y + b.y);
-        }
+        const {nx, ny, nz} = newellNormal(face?.points || face || []);
         const len = Math.hypot(nx, ny, nz);
         if (len < 1e-6) return [0, 0, 1];
         return [nx / len, ny / len, nz / len];
@@ -2225,17 +2164,6 @@ class ReadWrite {
         });
     }
 
-    // Replace the command queue (and stop a running animation)
-    static resetCommand(command) {
-        command.done = [];
-        command.tokenTodo = [];
-        command.iToken = 0;
-        command.instructions = [];
-        command.tpi = 0;
-        command.tni = 1;
-        command.model.state = State.run;
-    }
-
     // Load a command script or a FOLD JSON into an existing Command
     static loadText(command, text) {
         const trimmed = String(text ?? '').replace(/^\uFEFF/, '').trim();
@@ -2249,16 +2177,15 @@ class ReadWrite {
                     lines: command.model.lines,
                     snap: command.model.snap,
                 };
-                ReadWrite.resetCommand(command);
                 Object.assign(command.model, loaded, keep);
-                command.model.state = State.run;
+                command.reset();
                 ReadWrite.syncCommandArea(command, '');
                 return 'fold';
             } catch {
                 // Fall through and treat as a command script
             }
         }
-        ReadWrite.resetCommand(command);
+        command.reset();
         const area = command.commandArea;
         command.commandArea = undefined;
         command.command(trimmed);
@@ -2404,7 +2331,7 @@ class ReadWrite {
     }
 
     // Simple orthographic (x,y) -> canvas projection for a model with no live WebGL view,
-    // e.g. a headless step snapshot from Command.replaySteps. y is flipped (SVG y grows down).
+    // e.g. a step snapshot from Command.steps(). y is flipped (SVG y grows down).
     static projectOrtho(model) {
         for (const p of model.points) {
             p.xCanvas = p.x;
@@ -2591,8 +2518,13 @@ class Command {
     // Tokenized commands
     tokenTodo = [];
     iToken = 0;
-    done = []; // List of model states
-    instructions = []; // List of commands done
+    instructions = [];
+    snapshots = [];
+    paths = [];
+    cursor = 0;
+    path = null;
+    transition = null;
+    changed = false;
     // Time interpolated at an instant 'p' preceding and at instant 'n' now
     tpi = 0;
     tni = 1;
@@ -2605,9 +2537,8 @@ class Command {
     tStart = 0;
     // Eventual CommandArea
     commandArea;
-    // When true, newly queued instructions pause instead of auto-running, so the
-    // step-by-step debug button can advance them one line at a time.
-    stepMode = false;
+    autoplay = false;
+    halt = false;
     // Optional 3D view (for svg export and other view-dependent commands)
     /** @type {{ modelView?: Float32Array, updateCanvasCoords?: () => void } | null} */
     view3d;
@@ -2619,65 +2550,129 @@ class Command {
     constructor(model, view3d = null) {
         this.model = model;
         this.view3d = view3d;
+        this.reset();
+    }
+    reset() {
+        this.tokenTodo = [];
+        this.iToken = 0;
+        this.instructions = [];
+        this.snapshots = [this.model.serialize()];
+        this.paths = [null];
+        this.cursor = 0;
+        this.path = null;
+        this.transition = null;
+        this.tpi = 0;
+        this.tni = 1;
+        this.frozenAxes.clear();
+        this.model.state = State.run;
+    }
+    get first() {
+        return /^(d|define)\b/.test(this.instructions[0] ?? '') ? 1 : 0;
+    }
+    get busy() {
+        return this.model.state === State.anim || this.iToken < this.tokenTodo.length;
+    }
+    steps() {
+        return this.snapshots.slice(1, this.cursor + 1).map((json) => Model.deserialize(json));
     }
 
     // The main entry point executes a string of commands
     command(cde) {
         this.commandArea?.addLine(cde);
         const tokens = this.tokenize(cde);
+        if (tokens.length) {
+            this.settle();
+            this.autoplay = false;
+        }
+        if (tokens.length === 1 && tokens[0] === 'pause') {
+            this.pause();
+            return this;
+        }
         if (tokens[0] === 'd' || tokens[0] === 'define') {
-            this.done = [];
-            this.tokenTodo = [];
-            this.iToken = 0;
-            this.instructions = [];
-            // A fresh model replaces whatever script was running before.
-            this.model.state = State.run;
+            this.reset();
         } else if (tokens[0] === 'u' || tokens[0] === 'undo') {
-            // Drop the snapshot of the live model; runUndo restores the previous one.
-            if (this.done.length > 0) {
-                this.done.pop();
-                this.instructions.pop();
-            }
-            this.model.state = State.undo;
+            this.goTo(this.model.state === State.anim ? this.cursor : this.cursor - 1, true);
+            return this;
+        } else if (tokens[0] === 'redo') {
+            this.goTo(this.cursor + 1, true);
             return this;
         } else if (tokens[0] === 'run') {
-            this.model.state = State.run;
-            this.stepMode = false;
+            this.play();
             return this;
         } else if (tokens[0] === 'stop') {
             this.tokenTodo.length = this.iToken;
             return this;
         }
-        if (this.model.state === State.undo) {
-            this.model.state = State.run;
+        if (tokens.length && this.iToken < this.tokenTodo.length && this.tokenTodo.at(-1) !== '\n') {
+            this.tokenTodo.push('\n');
         }
         this.tokenTodo.push(...tokens);
-        if (this.stepMode) {
-            this.model.state = State.pause;
-        }
         return this;
     }
-
-    stepLine() {
-        if (this.model.state === State.pause) {
-            this.model.state = State.run;
-        }
-        let advanced = false;
-        while (this.model.state === State.anim || this.iToken < this.tokenTodo.length) {
-            if (this.model.state === State.anim) {
-                this.tStart = performance.now() - this.duration - 1; // force tn >= 1
-                this.runAnim();
-                advanced = true;
-                continue;
-            }
-            const wasNewline = this.peek() === '\n';
-            if (!this.runNext()) break;
-            advanced = true;
-            if (wasNewline) break;
-        }
-        this.model.state = State.pause;
-        return advanced;
+    get animating() {
+        return this.model.state === State.anim || this.model.state === State.undo;
     }
+    get playing() {
+        return this.autoplay || (this.busy && this.model.state !== State.pause && !this.halt);
+    }
+    play() {
+        this.halt = false;
+        if (this.model.state === State.pause) this.model.state = State.run;
+        this.autoplay = !this.busy && this.cursor < this.instructions.length;
+    }
+    pause() {
+        this.autoplay = false;
+        this.halt = this.busy;
+    }
+    autoStep() {
+        if (!this.autoplay) return false;
+        this.goTo(this.cursor + 1, true);
+        this.autoplay = this.cursor < this.instructions.length && this.instructions[this.cursor - 1] !== 'pause';
+        return true;
+    }
+    settle() {
+        if (this.model.state !== State.undo) return;
+        Object.assign(this.model, Model.deserialize(this.snapshots[this.cursor]));
+        this.transition = null;
+        this.model.state = State.run;
+        this.changed = true;
+    }
+    goTo(k, animate = false) {
+        this.settle();
+        this.autoplay = false;
+        this.halt = false;
+        this.tokenTodo.length = this.iToken;
+        this.frozenAxes.clear();
+        this.path = null;
+        this.tpi = 0;
+        this.tni = 1;
+        const target = Math.max(this.first, Math.min(k, this.instructions.length));
+        const path = animate && Math.abs(target - this.cursor) === 1 ? this.paths[Math.max(target, this.cursor)] : null;
+        const forward = target > this.cursor;
+        this.cursor = target;
+        Object.assign(this.model, Model.deserialize(this.snapshots[target]));
+        this.model.state = State.run;
+        this.changed = true;
+        if (path?.frames.every((frame) => frame.coords.length === this.model.points.length * 3)) {
+            this.transition = {path, forward, start: performance.now()};
+            this.model.state = State.undo;
+            this.runTransition();
+        }
+    }
+    runTransition() {
+        const {path, forward, start} = this.transition;
+        const tn = path.duration > 0 ? Math.min((performance.now() - start) / path.duration, 1) : 1;
+        const u = forward ? tn : 1 - tn;
+        const frames = path.frames;
+        let i = 0;
+        while (i < frames.length - 2 && frames[i + 1].tn < u) i++;
+        const a = frames[i], b = frames[i + 1];
+        const r = b.tn > a.tn ? Math.max(0, Math.min(1, (u - a.tn) / (b.tn - a.tn))) : 1;
+        this.model.restorePositions(a.coords.map((c, j) => c + (b.coords[j] - c) * r));
+        if (tn >= 1) this.settle();
+        return true;
+    }
+
     // Tokenize, split the input String in Array of String
     tokenize(input) {
         const cleaned = input
@@ -2728,13 +2723,18 @@ class Command {
     // Only 4 states: run, anim, undo, pause
     // Called by requestAnimationFrame(loop)
     anim() {
+        const changed = this.changed;
+        this.changed = false;
+        return this.advance() || changed;
+    }
+    advance() {
         switch (this.model.state) {
             case State.pause:
                 return false;
             case State.run:
-                return this.runNext();
+                return this.runNext() || this.autoStep();
             case State.undo:
-                return this.runUndo();
+                return this.runTransition();
             case State.anim:
                 return this.runAnim();
             default:
@@ -2745,14 +2745,17 @@ class Command {
 
     runNext() {
         if (this.iToken >= this.tokenTodo.length) {
+            this.halt = false;
+            return false;
+        }
+        if (this.halt) {
+            this.halt = false;
+            this.model.state = State.pause;
             return false;
         }
         this.idxBefore = this.iToken;
         // Handle time command to start animation and switch to Anim
         if (this.peek() === 't' || this.peek() === 'time') {
-            // Snapshot before the animated line (state is still run). Without it,
-            // undo only has anim-frame snapshots and never returns to State.run.
-            this.pushUndo();
             this.iToken++;
             this.duration = Number.parseFloat(this.next());
             this.tStart = performance.now();
@@ -2761,23 +2764,7 @@ class Command {
             return true;
         }
         this.execute(this.iToken);
-        this.doneInstructions(this.idxBefore, this.iToken);
-        return true;
-    }
-
-    runUndo() {
-        // Empty stack: stay in undo and nothing ever runs again (commandArea / mouse).
-        if (this.done.length === 0) {
-            this.model.state = State.run;
-            return false;
-        }
-        this.popUndo();
-        // Continue undo through per-frame snapshots of an animated line
-        if (this.model.state === State.anim) {
-            this.model.state = State.undo;
-            return true;
-        }
-        this.model.state = this.stepMode ? State.pause : State.run;
+        this.record(this.idxBefore, this.iToken);
         return true;
     }
 
@@ -2786,21 +2773,15 @@ class Command {
         const targetTni = this.interpolator(tn);
         // Execute commands after t xxx up to end of line
         const iBeginAnim = this.iToken;
-        // Commands like 'a' (adjust) resolve a point's 3d position iteratively from
-        // its position in the *previous* step, so a big jump in a single call (a short
-        // duration, or a slow display giving few real frames) can make it settle on the
-        // wrong stable fold instead of the one continuous small motions converge to.
-        // Replay this frame's motion as small fixed-size substeps so the result only
-        // depends on the animated distance, not on how many real frames covered it.
         if (this.tpi === 0) this.freezeRotateAxes(iBeginAnim);
+        this.path ??= {duration: this.duration, frames: [{tn: 0, coords: this.model.snapshotPositions()}]};
         const maxStep = 0.01;
         const steps = Math.max(1, Math.ceil(Math.abs(targetTni - this.tpi) / maxStep));
         for (let i = 1; i <= steps; i++) {
             this.tni = this.tpi + (targetTni - this.tpi) * i / steps;
             this.iToken = iBeginAnim;
-            const recordUndo = i === steps;
             while (this.iToken < this.tokenTodo.length && this.peek() !== '\n') {
-                this.execute(this.iToken, recordUndo);
+                this.execute(this.iToken);
             }
             this.tpi = this.tni;
         }
@@ -2811,17 +2792,18 @@ class Command {
             if (this.model.snap) {
                 this.model.snapPoints();
             }
-            this.doneInstructions(this.idxBefore, this.iToken);
+            this.path.frames.push({tn: 1, coords: this.model.snapshotPositions()});
+            this.record(this.idxBefore, this.iToken, this.path);
+            this.path = null;
             this.model.state = State.run;
             return true;
         }
+        if (tn >= this.path.frames.at(-1).tn + 1 / 16) this.path.frames.push({tn, coords: this.model.snapshotPositions()});
         this.iToken = iBeginAnim;
         return true;
     }
 
     // A rotated point can itself be another simultaneous rotation's axis endpoint
-    // (e.g. `t 1000 r s6 180 p7 r s13 -90 p5` where s13 = p7-p4): re-reading the
-    // axis live, substep after substep, would make it drift along with that point.
     // Snapshot the axis of every `r` of the line before any of them has run, so the
     // last rotation does not see an axis already moved by the earlier ones.
     freezeRotateAxes(iBegin) {
@@ -2838,19 +2820,20 @@ class Command {
         }
     }
 
-    doneInstructions(idxBefore, idxAfter) {
-        const doneCommands = this.tokenTodo.slice(idxBefore, idxAfter).join(' ');
-        if (doneCommands === 'undo') {
-            this.instructions.pop();
-        } else if (doneCommands !== '' && doneCommands !== '\n') {
-            this.instructions.push(doneCommands);
+    record(idxBefore, idxAfter, path = null) {
+        const line = this.tokenTodo.slice(idxBefore, idxAfter).join(' ');
+        if (line === '' || line === '\n') return;
+        if (this.instructions[this.cursor] !== line) {
+            this.instructions.length = this.cursor;
+            this.snapshots.length = this.paths.length = this.cursor + 1;
         }
+        this.instructions[this.cursor++] = line;
+        this.snapshots[this.cursor] = this.model.serialize();
+        this.paths[this.cursor] = path;
     }
 
     // Execute one instruction from tokenTodo starting at idx on the model.
-    // pushUndo defaults to true (every non-animated call site wants a snapshot);
-    // runAnim() passes false for all but an animated line's last real-frame substep.
-    execute(idx, pushUndo = true) {
+    execute(idx) {
         this.iToken = idx;
         const token = this.next();
         const command = COMMANDS[token];
@@ -2859,7 +2842,6 @@ class Command {
         } else if (token !== '\n') {
             this.skipUnexpected();
         }
-        if (pushUndo) this.pushUndo();
     }
 
     skipUnexpected() {
@@ -2891,31 +2873,6 @@ class Command {
         return list;
     }
 
-    pushUndo() {
-        if (this.model.state === State.anim) {
-            this.done.push({
-                state: State.anim,
-                coords: this.model.snapshotPositions(),
-            });
-        } else {
-            this.done.push(this.model.serialize());
-        }
-    }
-
-    popUndo() {
-        if (this.done.length === 0) {
-            return;
-        }
-        const snapshot = this.done.pop();
-        if (typeof snapshot === 'string') {
-            Object.assign(this.model, Model.deserialize(snapshot));
-        } else if (snapshot?.state === State.anim) {
-            this.model.state = State.anim;
-            if (snapshot.coords) {
-                this.model.restorePositions(snapshot.coords);
-            }
-        }
-    }
 }
 
 function reportError(cmd, message) {
@@ -2961,24 +2918,6 @@ function turn(axis) {
 
 function define(cmd) {
     cmd.model.init(cmd.num(200), cmd.num(200));
-}
-
-// Replay a recorded instruction list (cmd.instructions) on a fresh headless Model,
-// instantly settling any 't'-animated line, one Model snapshot returned per instruction.
-function replaySteps(instructions) {
-    const replay = new Command(new Model());
-    const steps = [];
-    for (const line of instructions) {
-        replay.command(line);
-        while (replay.iToken < replay.tokenTodo.length || replay.model.state === State.anim) {
-            if (replay.model.state === State.anim) {
-                replay.tStart = performance.now() - replay.duration - 1; // force tn >= 1
-            }
-            if (!replay.anim()) break;
-        }
-        steps.push(Model.deserialize(replay.model.serialize()));
-    }
-    return steps;
 }
 
 function splitSegment(cmd) {
@@ -3109,35 +3048,23 @@ on('selectPoints sp', (cmd) => select(cmd, 'p', cmd.model.points));
 on('selectSegments ss', (cmd) => select(cmd, 's', cmd.model.segments));
 on('selectFaces sf', (cmd) => select(cmd, 'f', cmd.model.faces));
 
-on('read', (cmd) => {
-    const token = cmd.peek();
-    const filename = token && token !== '\n' && !COMMANDS[token] ? cmd.next() : undefined;
-    ReadWrite.readFileAsText(filename).then((text) => {
-        if (text == null) return;
-        ReadWrite.loadText(cmd, text);
+function io(names, action) {
+    on(names, (cmd) => {
+        const token = cmd.peek();
+        const filename = token && token !== '\n' && !COMMANDS[token] ? cmd.next() : undefined;
+        action(cmd, filename);
     });
-});
-on('write instructions', (cmd) => {
-    const token = cmd.peek();
-    const filename = token && token !== '\n' && !COMMANDS[token] ? cmd.next() : undefined;
-    ReadWrite.writeFile(cmd.instructions.join('\n'), filename).catch((e) => console.error(e));
-});
-on('writeSvg svg', (cmd) => {
-    const token = cmd.peek();
-    const filename = token && token !== '\n' && !COMMANDS[token] ? cmd.next() : undefined;
+}
+io('read', (cmd, filename) => ReadWrite.readFileAsText(filename).then((text) => {
+    if (text != null) ReadWrite.loadText(cmd, text);
+}));
+io('write instructions', (cmd, filename) => ReadWrite.writeFile(cmd.instructions.slice(0, cmd.cursor).join('\n'), filename).catch(console.error));
+io('writeSvg svg', (cmd, filename) => {
     cmd.view3d?.updateCanvasCoords?.();
-    ReadWrite.writeSVG(cmd.model, filename).catch((e) => console.error(e));
+    ReadWrite.writeSVG(cmd.model, filename).catch(console.error);
 });
-on('writeFold fold', (cmd) => {
-    const token = cmd.peek();
-    const filename = token && token !== '\n' && !COMMANDS[token] ? cmd.next() : undefined;
-    ReadWrite.writeFold(cmd.model, filename).catch((e) => console.error(e));
-});
-on('writeDiagrams diagrams', (cmd) => {
-    const token = cmd.peek();
-    const filename = token && token !== '\n' && !COMMANDS[token] ? cmd.next() : undefined;
-    ReadWrite.writeDiagrams(replaySteps(cmd.instructions), filename).catch((e) => console.error(e));
-});
+io('writeFold fold', (cmd, filename) => ReadWrite.writeFold(cmd.model, filename).catch(console.error));
+io('writeDiagrams diagrams', (cmd, filename) => ReadWrite.writeDiagrams(cmd.steps(), filename).catch(console.error));
 
 // Toggles
 on('labels', (cmd) => { cmd.model.labels = !cmd.model.labels; });
@@ -3189,6 +3116,7 @@ class CommandArea {
         const el = e.target; // HTMLTextAreaElement
         if (e.key === 'Enter') {
             e.preventDefault();
+            if (this.command.animating) return;
             const caretPos = el.selectionStart;
             const value = el.value;
             const start = value.lastIndexOf('\n', caretPos - 1) + 1;
@@ -3201,12 +3129,36 @@ class CommandArea {
             this.textarea.selectionStart = this.textarea.selectionEnd = this.textarea.value.length;
             el.scrollTop = el.scrollHeight;
         }
-        // Control Z to undo
-        if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
+        const key = e.key.toLowerCase();
+        if ((e.ctrlKey || e.metaKey) && (key === 'z' || key === 'y')) {
             e.preventDefault();
             e.stopPropagation();
-            this.command.command('undo');
+            this.command.command(key === 'y' || e.shiftKey ? 'redo' : 'undo');
         }
+    }
+}
+
+
+class Timeline {
+    constructor(command, input, label) {
+        this.command = command;
+        this.input = input;
+        this.label = label;
+        input.addEventListener('input', () => {
+            command.goTo(Number(input.value));
+            this.update();
+        });
+        this.update();
+    }
+    update() {
+        const {instructions, cursor} = this.command;
+        const n = instructions.length;
+        this.input.disabled = this.command.busy || n === 0;
+        this.input.min = String(this.command.first);
+        this.input.max = String(n);
+        this.input.value = String(cursor);
+        this.label.textContent = `${cursor}/${n}`;
+        this.label.title = instructions[cursor - 1] ?? '';
     }
 }
 
@@ -3231,7 +3183,7 @@ class Helper {
         // Mouse coordinates, first and current
         this.firstX = this.firstY = this.currentX = this.currentY = undefined;
         // Correctif pour les gestes tactiles
-        let lastTouchDistance = 0;
+        this.lastTouchDistance = 0;
 
         // To test with Deno, view3d (and its overlay) may be null
         const overlay = view3d?.overlay;
@@ -3249,26 +3201,26 @@ class Helper {
             // Keyboard
             document.addEventListener('keydown', (event) => this.keydown(event));
             // Tactile
-            document.addEventListener('touchstart', function(e) {
+            document.addEventListener('touchstart', (e) => {
                 if (e.touches && e.touches.length >= 2) {
                     const t0 = e.touches[0];
                     const t1 = e.touches[1];
                     const dx = t0.clientX - t1.clientX;
                     const dy = t0.clientY - t1.clientY;
-                    lastTouchDistance = Math.sqrt(dx*dx + dy*dy);
+                    this.lastTouchDistance = Math.sqrt(dx*dx + dy*dy);
                 }
             });
             // Add e.scale for View3d
-            document.addEventListener('touchmove', function(e) {
+            document.addEventListener('touchmove', (e) => {
                 if (e.touches && e.touches.length >= 2 && !e.scale) {
                     const t0 = e.touches[0];
                     const t1 = e.touches[1];
                     const dx = t0.clientX - t1.clientX;
                     const dy = t0.clientY - t1.clientY;
                     const currentDist = Math.sqrt(dx*dx + dy*dy);
-                    if (lastTouchDistance > 0) {
-                        e.scale = currentDist / lastTouchDistance;
-                        lastTouchDistance = currentDist;
+                    if (this.lastTouchDistance > 0) {
+                        e.scale = currentDist / this.lastTouchDistance;
+                        this.lastTouchDistance = currentDist;
                     }
                 }
             });
@@ -3314,10 +3266,10 @@ class Helper {
     }
 
     keydown(event) {
-        // Control Z to undo
-        if (event.key === 'z' && (event.ctrlKey || event.metaKey)) {
-            this.command.command('undo');
-        }
+        if (!(event.ctrlKey || event.metaKey)) return;
+        const key = event.key.toLowerCase();
+        if (key === 'y' || (key === 'z' && event.shiftKey)) this.command.command('redo');
+        else if (key === 'z') this.command.command('undo');
     }
 
     // Helper method to get formatted object string id (e.g. 'p0', 's1', 'f2')
@@ -4308,32 +4260,15 @@ class View3d {
     modelView = new Float32Array(16);
     canvasView = new Float32Array(16);
 
-    // Textures dimensions defaults
     wTexFront = 1;
     hTexFront = 1;
     wTexBack = 1;
     hTexBack = 1;
-
-    // WebGL Textures
-    texPlaceholderFront = null;
-    texImageFront = null;
-    texPlaceholderBack = null;
-    texImageBack = null;
-
-    // Arrays
-    vtx = []; // vertex coords
-    ftx = []; // front texture coords
-    btx = []; // back texture coords
-    fnr = []; // front normals coords
-    lin = []; // lines indices
-
-    // WebGL Buffers
-    vtxBuffer = null;
-    fnrBuffer = null;
-    ftxBuffer = null;
-    btxBuffer = null;
-    linBuffer = null;
-    vao = null;
+    vtx = [];
+    ftx = [];
+    btx = [];
+    fnr = [];
+    lin = [];
 
     constructor(model, canvas3d) {
         this.model = model;
@@ -4384,253 +4319,120 @@ class View3d {
         return this.overlay?.getContext('2d');
     }
 
-    // Shaders
     initShaders() {
-        // Vertex
         const gl = this.gl;
-        const vxShader = gl.createShader(gl.VERTEX_SHADER);
-        gl.shaderSource(vxShader, this.VERTEX_SHADER);
-        gl.compileShader(vxShader);
-        if (!gl.getShaderParameter(vxShader, gl.COMPILE_STATUS)) {
-            console.error(gl.getShaderInfoLog(vxShader));
-        }
-        // Fragment
-        const fgShader = gl.createShader(gl.FRAGMENT_SHADER);
-        gl.shaderSource(fgShader, this.FRAGMENT_SHADER);
-        gl.compileShader(fgShader);
-        if (!gl.getShaderParameter(fgShader, gl.COMPILE_STATUS)) {
-            console.error(gl.getShaderInfoLog(fgShader));
-        }
-        // Create the shader program
         const program = gl.createProgram();
-        gl.attachShader(program, vxShader);
-        gl.attachShader(program, fgShader);
+        const shaders = [[gl.VERTEX_SHADER, this.VERTEX_SHADER], [gl.FRAGMENT_SHADER, this.FRAGMENT_SHADER]].map(([type, source]) => {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(shader));
+            gl.attachShader(program, shader);
+            return shader;
+        });
         gl.linkProgram(program);
-        this.checkErrors(gl, program, vxShader, fgShader);
-
-        // Use it and copy it in an attribute of gl
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.error(`Shader link error: ${gl.getProgramInfoLog(program)}\n${shaders.map((s) => gl.getShaderInfoLog(s)).join('\n')}`);
+        }
         gl.useProgram(program);
         gl.program = program;
-        this.checkErrors(gl, program, vxShader, fgShader);
+        this.uniforms = Object.fromEntries(['uModelViewMatrix', 'uProjectionMatrix', 'uSamplerFront', 'uSamplerBack', 'uLine']
+            .map((name) => [name, gl.getUniformLocation(program, name)]));
     }
-
-    checkErrors(gl, program, glVertexShader, glFragmentShader) {
-        const programLog = gl.getProgramInfoLog(program).trim();
-        const vertexLog = gl.getShaderInfoLog(glVertexShader).trim();
-        const fragmentLog = gl.getShaderInfoLog(glFragmentShader).trim();
-        if (gl.getProgramParameter(program, gl.LINK_STATUS) === false) {
-            console.error('Shader Error ' + gl.getError() + ' - ' + 'VALIDATE_STATUS ' + gl.getProgramParameter(program, 35715) + '\n\n' + 'Program Info Log: ' + programLog + '\n' + vertexLog + '\n' + fragmentLog);
-        }
-    }
-
-    // Textures
     initTextures() {
-        const gl = this.gl;
-
-        // Front placeholder (Blue 70ACF3)
-        this.texPlaceholderFront = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, this.texPlaceholderFront);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0x70, 0xAC, 0xF3, 255]));
-
-        // Front image texture (defaults to blue placeholder until loaded)
-        this.texImageFront = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, this.texImageFront);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0x70, 0xAC, 0xF3, 255]));
-
-        const imageFront = new Image();
-        const imageElement = globalThis.document.getElementById('front');
-        if (imageElement?.src) {
-            imageFront.onload = () => {
-                gl.bindTexture(gl.TEXTURE_2D, this.texImageFront);
-                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, imageFront);
-                this.wTexFront = imageFront.width;
-                this.hTexFront = imageFront.height;
-                this.initBuffers();
-                this.render();
-            };
-            imageFront.src = imageElement.src;
-        } else {
-            this.wTexFront = 1;
-            this.hTexFront = 1;
-        }
-
-        // Back placeholder (Yellow FFFF00A8)
-        this.texPlaceholderBack = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, this.texPlaceholderBack);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0xFF, 0xFF, 0x00, 0xA8]));
-
-        // Back image texture (defaults to yellow placeholder until loaded)
-        this.texImageBack = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, this.texImageBack);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0xFF, 0xFF, 0x00, 0xA8]));
-
-        const imageBack = new Image();
-        const imageBackElement = globalThis.document.getElementById('back');
-        if (imageBackElement?.src) {
-            imageBack.onload = () => {
-                gl.bindTexture(gl.TEXTURE_2D, this.texImageBack);
-                // Flip the image Y coordinate
-                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
-                // One of the dimensions is not a power of 2, so set the filtering to render it.
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, imageBack);
-                // Textures dimensions
-                this.wTexBack = imageBack.width;
-                this.hTexBack = imageBack.height;
-                this.initBuffers();
-                this.render();
-            };
-            imageBack.src = imageBackElement.src;
-        } else {
-            this.wTexBack = 1;
-            this.hTexBack = 1;
-        }
-
-        const uSamplerFront = gl.getUniformLocation(gl.program, 'uSamplerFront');
-        gl.uniform1i(uSamplerFront, 0);
-        const uSamplerBack = gl.getUniformLocation(gl.program, 'uSamplerBack');
-        gl.uniform1i(uSamplerBack, 1);
-
-        // Recompute texture coords
+        const blue = [0x70, 0xAC, 0xF3, 0xFF], yellow = [0xFF, 0xFF, 0x00, 0xA8];
+        this.texPlaceholderFront = this.createTexture(blue);
+        this.texImageFront = this.loadTexture('front', blue, (w, h) => { this.wTexFront = w; this.hTexFront = h; });
+        this.texPlaceholderBack = this.createTexture(yellow);
+        this.texImageBack = this.loadTexture('back', yellow, (w, h) => { this.wTexBack = w; this.hTexBack = h; });
+        this.gl.uniform1i(this.uniforms.uSamplerFront, 0);
+        this.gl.uniform1i(this.uniforms.uSamplerBack, 1);
         this.initBuffers();
-        // First Render
         this.render();
     }
-
-    // Perspective and background
+    createTexture(rgba) {
+        const gl = this.gl;
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(rgba));
+        return texture;
+    }
+    loadTexture(id, rgba, setSize) {
+        const gl = this.gl;
+        const texture = this.createTexture(rgba);
+        const src = globalThis.document.getElementById(id)?.src;
+        if (!src) return texture;
+        const image = new Image();
+        image.onload = () => {
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+            setSize(image.width, image.height);
+            this.initBuffers();
+            this.render();
+        };
+        image.src = src;
+        return texture;
+    }
     initPerspective() {
         const gl = this.gl;
-        gl.clearColor(0xCC / 0xFF, 0xE4 / 0xFF, 0x1, 0x1);  // Clear to light blue, 0xCCE4FF fully opaque
+        gl.clearColor(0xCC / 0xFF, 0xE4 / 0xFF, 1, 1);
         gl.enable(gl.DEPTH_TEST);
         gl.depthFunc(gl.LEQUAL);
-
-        const { width, height } = this.syncCanvasSize();
+        const {width, height} = this.syncCanvasSize();
         gl.viewport(0, 0, width, height);
-
-        const ratio = width / height;
-        const fov = 40;
-        const near = 50;
-        const far = 1200;
-        this.projection = mat4.perspective(mat4.create(), fov * Math.PI / 180, ratio, near, far);
-        const uProjectionMatrix = gl.getUniformLocation(gl.program, 'uProjectionMatrix');
-        gl.uniformMatrix4fv(uProjectionMatrix, false, this.projection);
+        this.projection = mat4.perspective(mat4.create(), 40 * Math.PI / 180, width / height, 50, 1200);
+        gl.uniformMatrix4fv(this.uniforms.uProjectionMatrix, false, this.projection);
     }
-
-    // Buffers
     initBuffers() {
         const gl = this.gl;
-        if (!this.vao) {
-            this.vao = gl.createVertexArray();
-        }
+        this.vao ??= gl.createVertexArray();
         gl.bindVertexArray(this.vao);
-        this.vtx = []; // vertex coords
-        this.ftx = []; // front texture coords
-        this.btx = []; // back texture coords
-        this.fnr = []; // front normals coords
-        this.lin = []; // lines indices
-        this.indexMap = new WeakMap(); // index in vtx for each point
-
-        // Faces with FAN
-        let index = 0;
+        this.vtx = [];
+        this.ftx = [];
+        this.btx = [];
+        this.fnr = [];
+        this.lin = [];
+        this.indexMap = new WeakMap();
         for (const f of this.model.faces) {
             const pts = f.points;
             const n = this.normal(pts);
             const faceIndex = new Map();
-
             for (let i = 1; i < pts.length - 1; i++) {
-                // First point
-                this.vtx.push(pts[0].x + f.offset * n[0], pts[0].y + f.offset * n[1], pts[0].z + f.offset * n[2]);
-                this.fnr.push(n[0], n[1], n[2]);
-                // Texture at first point of triangle
-                this.ftx.push((200 + pts[0].xf) / this.wTexFront);
-                this.ftx.push((200 + pts[0].yf) / this.hTexFront);
-                this.btx.push((200 + pts[0].xf) / this.wTexBack);
-                this.btx.push((200 + pts[0].yf) / this.hTexBack);
-
-                // Two other points: i and i+1
-                this.vtx.push(pts[i].x + f.offset * n[0], pts[i].y + f.offset * n[1], pts[i].z + f.offset * n[2]);
-                this.fnr.push(n[0], n[1], n[2]);
-
-                // Second point of triangle
-                this.vtx.push(pts[i + 1].x + f.offset * n[0], pts[i + 1].y + f.offset * n[1], pts[i + 1].z + f.offset * n[2]);
-                this.fnr.push(n[0], n[1], n[2]);
-                // Texture at second point of triangle
-                this.ftx.push((200 + pts[i].xf) / this.wTexFront);
-                this.ftx.push((200 + pts[i].yf) / this.hTexFront);
-                this.btx.push((200 + pts[i].xf) / this.wTexBack);
-                this.btx.push((200 + pts[i].yf) / this.hTexBack);
-
-                // Texture at third point of triangle
-                this.ftx.push((200 + pts[i + 1].xf) / this.wTexFront);
-                this.ftx.push((200 + pts[i + 1].yf) / this.hTexFront);
-                this.btx.push((200 + pts[i + 1].xf) / this.wTexBack);
-                this.btx.push((200 + pts[i + 1].yf) / this.hTexBack);
-
-                // Keep track of index in vtx for each point, per face for the contour
-                if (!this.indexMap.has(pts[0])) this.indexMap.set(pts[0], index);
-                if (!faceIndex.has(pts[0])) faceIndex.set(pts[0], index);
-                index++;
-                if (!this.indexMap.has(pts[i])) this.indexMap.set(pts[i], index);
-                if (!faceIndex.has(pts[i])) faceIndex.set(pts[i], index);
-                index++;
-                if (!this.indexMap.has(pts[i + 1])) this.indexMap.set(pts[i + 1], index);
-                if (!faceIndex.has(pts[i + 1])) faceIndex.set(pts[i + 1], index);
-                index++;
+                for (const p of [pts[0], pts[i], pts[i + 1]]) {
+                    const index = this.vtx.length / 3;
+                    if (!this.indexMap.has(p)) this.indexMap.set(p, index);
+                    if (!faceIndex.has(p)) faceIndex.set(p, index);
+                    this.vtx.push(p.x + f.offset * n[0], p.y + f.offset * n[1], p.z + f.offset * n[2]);
+                    this.fnr.push(...n);
+                    this.ftx.push((200 + p.xf) / this.wTexFront, (200 + p.yf) / this.hTexFront);
+                    this.btx.push((200 + p.xf) / this.wTexBack, (200 + p.yf) / this.hTexBack);
+                }
             }
-
-            // Contour of this face only, in point order, using this face's own vertex copies
-            for (let i = 0; i < pts.length; i++) {
-                this.lin.push(faceIndex.get(pts[i]), faceIndex.get(pts[(i + 1) % pts.length]));
-            }
+            pts.forEach((p, i) => this.lin.push(faceIndex.get(p), faceIndex.get(pts[(i + 1) % pts.length])));
         }
-
-        // Vertices
-        if (!this.vtxBuffer) {this.vtxBuffer = gl.createBuffer();}
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.vtxBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vtx), gl.STATIC_DRAW); // Vertex
-        const aVertexPosition = gl.getAttribLocation(gl.program, 'aVertexPosition');
-        gl.vertexAttribPointer(aVertexPosition, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(aVertexPosition);
-
-        // Normals
-        if (!this.fnrBuffer) {this.fnrBuffer = gl.createBuffer();}
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.fnrBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.fnr), gl.STATIC_DRAW); // fnr Face Normal
-        const aVertexNormal = gl.getAttribLocation(gl.program, 'aVertexNormal');
-        gl.vertexAttribPointer(aVertexNormal, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(aVertexNormal);
-
-        // Front texture
-        if (!this.ftxBuffer) {this.ftxBuffer = gl.createBuffer();}
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.ftxBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.ftx), gl.STATIC_DRAW); // Front Texture
-        const aTexCoordsFront = gl.getAttribLocation(gl.program, 'aTexCoordsFront');
-        gl.vertexAttribPointer(aTexCoordsFront, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(aTexCoordsFront);
-
-        // Back texture
-        if (!this.btxBuffer) {this.btxBuffer = gl.createBuffer();}
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.btxBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.btx), gl.STATIC_DRAW); // Back Texture
-        const aTexCoordsBack = gl.getAttribLocation(gl.program, 'aTexCoordsBack');
-        gl.vertexAttribPointer(aTexCoordsBack, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(aTexCoordsBack);
-
-        // Lines buffer, contour built per face above
-        if (!this.linBuffer) {this.linBuffer = gl.createBuffer();}
+        this.vtxBuffer = this.attribute(this.vtxBuffer, 'aVertexPosition', this.vtx, 3);
+        this.fnrBuffer = this.attribute(this.fnrBuffer, 'aVertexNormal', this.fnr, 3);
+        this.ftxBuffer = this.attribute(this.ftxBuffer, 'aTexCoordsFront', this.ftx, 2);
+        this.btxBuffer = this.attribute(this.btxBuffer, 'aTexCoordsBack', this.btx, 2);
+        this.linBuffer ??= gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.linBuffer);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(this.lin), gl.STATIC_DRAW);
-
-        // uniform flag for lines
-        gl.uniform1i(gl.getUniformLocation(gl.program, 'uLine'), 0);
-        // Unbind VAO after setup
+        gl.uniform1i(this.uniforms.uLine, 0);
         gl.bindVertexArray(null);
+    }
+    attribute(buffer, name, data, size) {
+        const gl = this.gl;
+        buffer ??= gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+        const location = gl.getAttribLocation(gl.program, name);
+        gl.vertexAttribPointer(location, size, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(location);
+        return buffer;
     }
     // Compute Face normal in [3]
     normal(pts) {
@@ -4668,9 +4470,7 @@ class View3d {
         // Scale ModelView
         this.modelView = mat4.scale(mv, mv, [this.scale, this.scale, this.scale]);
 
-        // Set Model View Matrix in Shader
-        const uModelViewMatrix = this.gl.getUniformLocation(this.gl.program, 'uModelViewMatrix');
-        this.gl.uniformMatrix4fv(uModelViewMatrix, false, this.modelView);
+        this.gl.uniformMatrix4fv(this.uniforms.uModelViewMatrix, false, this.modelView);
 
         this.updateCanvasCoords();
     }
@@ -4722,13 +4522,12 @@ class View3d {
 
         if (this.model.lines){
             // Segments drawElements and not drawArrays because normals imply 3 vertices per triangle
-            const uLine = gl.getUniformLocation(gl.program, 'uLine');
-            gl.uniform1i(uLine, 1); // Draw lines in black
+            gl.uniform1i(this.uniforms.uLine, 1);
             gl.disable(gl.DEPTH_TEST);
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.linBuffer);
             gl.drawElements(gl.LINES, this.lin.length, gl.UNSIGNED_INT, 0);
             gl.enable(gl.DEPTH_TEST);
-            gl.uniform1i(uLine, 0); // Back to normal
+            gl.uniform1i(this.uniforms.uLine, 0);
         }
 
         // Model projected on overlay canvas
@@ -4926,6 +4725,7 @@ class Label {
     // Helper
     const helper = new Helper(model, command, view3d, view2d);
     helper.out();
+    const timeline = new Timeline(command, document.getElementById('timeline'), document.getElementById('timelineLabel'));
 
     function resizeViews() {
       view3d.initPerspective();
@@ -4948,22 +4748,13 @@ class Label {
       }
       view3d.render();
       helper.draw();
-      document.getElementById('stepBtn').classList.toggle('active', command.stepMode);
-      document.getElementById('runBtn').classList.toggle('active', model.state === State.pause);
+      timeline.update();
+      document.getElementById('runBtn').setAttribute('aria-pressed', String(command.playing));
       requestAnimationFrame(loop);
     }
     loop();
 
-    // Step-by-step debug: first click arms step mode;
-    // each further click advances one script line.
-    // Type "run" to resume normal play.
-    document.getElementById('stepBtn').addEventListener('click', () => {
-      command.stepMode = true;
-      if (command.stepLine()) {
-        view3d.initBuffers();
-        view3d.initModelView();
-      }
-    });
+    document.getElementById('runBtn').addEventListener('click', () => command.command(command.playing ? 'pause' : 'run'));
 
     // Add button actions
     document.querySelectorAll('button[data-load]').forEach(btn => {
